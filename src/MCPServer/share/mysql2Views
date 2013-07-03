@@ -173,5 +173,80 @@ CREATE OR REPLACE VIEW developmentAide_choicesDisplayed AS
 CREATE OR REPLACE VIEW filesPreservationAccessFormatStatus AS
     SELECT Files.fileUUID, max(FileIDs.validPreservationFormat) AS 'inPreservationFormat', max(FileIDs.validAccessFormat) AS 'inAccessFormat' FROM Files LEFT OUTER JOIN FilesIdentifiedIDs ON Files.fileUUID = FilesIdentifiedIDs.fileUUID LEFT OUTER JOIN FileIDs ON FilesIdentifiedIDs.fileID = FileIDs.pk WHERE Files.fileGrpUse != 'preservation' GROUP BY Files.FileUUID;
 
+
+CREATE OR REPLACE VIEW fullLinks AS
+    SELECT  
+         MicroServiceChainLinks.pk AS 'MicroServiceChainLinks-pk',                                                                
+         MicroServiceChainLinks.currentTask AS 'MicroServiceChainLinks-currentTask',                                              
+         MicroServiceChainLinks.defaultNextChainLink AS 'MicroServiceChainLinks-defaultNextChainLink',                            
+         MicroServiceChainLinks.defaultPlaySound AS 'MicroServiceChainLinks-defaultPlaySound',                                    
+         MicroServiceChainLinks.microserviceGroup AS 'MicroServiceChainLinks-microserviceGroup',                                  
+         MicroServiceChainLinks.reloadFileList AS 'MicroServiceChainLinks-reloadFileList',                                        
+         MicroServiceChainLinks.defaultExitMessage AS 'MicroServiceChainLinks-defaultExitMessage',                                
+         MicroServiceChainLinks.replaces AS 'MicroServiceChainLinks-replaces',                                                    
+         MicroServiceChainLinks.lastModified AS 'MicroServiceChainLinks-lastModified',                                            
+         MicroServiceChainLinksExitCodes.pk AS 'MicroServiceChainLinksExitCodes-pk',                                              
+         MicroServiceChainLinksExitCodes.microServiceChainLink AS 'MicroServiceChainLinksExitCodes-microServiceChainLink',        
+         MicroServiceChainLinksExitCodes.exitCode AS 'MicroServiceChainLinksExitCodes-exitCode',                                  
+         MicroServiceChainLinksExitCodes.nextMicroServiceChainLink AS 'MicroServiceChainLinksExitCodes-nextMicroServiceChainLink',
+         MicroServiceChainLinksExitCodes.playSound AS 'MicroServiceChainLinksExitCodes-playSound',                                
+         MicroServiceChainLinksExitCodes.exitMessage AS 'MicroServiceChainLinksExitCodes-exitMessage',                            
+         MicroServiceChainLinksExitCodes.replaces AS 'MicroServiceChainLinksExitCodes-replaces',                                  
+         MicroServiceChainLinksExitCodes.lastModified AS 'MicroServiceChainLinksExitCodes-lastModified',                          
+         MicroServiceChains.pk AS 'MicroServiceChains-pk',                                                                        
+         MicroServiceChains.startingLink AS 'MicroServiceChains-startingLink',                                                    
+         MicroServiceChains.description AS 'MicroServiceChains-description',                                                      
+         MicroServiceChains.replaces AS 'MicroServiceChains-replaces',                                                            
+         MicroServiceChains.lastModified AS 'MicroServiceChains-lastModified',                                                    
+         StandardTasksConfigs.pk AS 'StandardTasksConfigs-pk',                                                                    
+         StandardTasksConfigs.filterFileEnd AS 'StandardTasksConfigs-filterFileEnd',                                              
+         StandardTasksConfigs.filterFileStart AS 'StandardTasksConfigs-filterFileStart',                                          
+         StandardTasksConfigs.filterSubDir AS 'StandardTasksConfigs-filterSubDir',                                                
+         StandardTasksConfigs.requiresOutputLock AS 'StandardTasksConfigs-requiresOutputLock',                                    
+         StandardTasksConfigs.standardOutputFile AS 'StandardTasksConfigs-standardOutputFile',                                    
+         StandardTasksConfigs.standardErrorFile AS 'StandardTasksConfigs-standardErrorFile',                                      
+         StandardTasksConfigs.execute AS 'StandardTasksConfigs-execute',                                                          
+         StandardTasksConfigs.arguments AS 'StandardTasksConfigs-arguments',                                                      
+         StandardTasksConfigs.replaces AS 'StandardTasksConfigs-replaces',                                                        
+         StandardTasksConfigs.lastModified AS 'StandardTasksConfigs-lastModified',                                                
+         TasksConfigs.pk AS 'TasksConfigs-pk',                                                                                    
+         TasksConfigs.taskType AS 'TasksConfigs-taskType',                                                                        
+         TasksConfigs.taskTypePKReference AS 'TasksConfigs-taskTypePKReference',                                                  
+         TasksConfigs.description AS 'TasksConfigs-description',                                                                  
+         TasksConfigs.replaces AS 'TasksConfigs-replaces',                                                                        
+         TasksConfigs.lastModified AS 'TasksConfigs-lastModified',                                                                
+         WatchedDirectories.pk AS 'WatchedDirectories-pk',                                                                        
+         WatchedDirectories.watchedDirectoryPath AS 'WatchedDirectories-watchedDirectoryPath',                                    
+         WatchedDirectories.chain AS 'WatchedDirectories-chain',                                                                  
+         WatchedDirectories.onlyActOnDirectories AS 'WatchedDirectories-onlyActOnDirectories',                                    
+         WatchedDirectories.expectedType AS 'WatchedDirectories-expectedType',                                                    
+         WatchedDirectories.replaces AS 'WatchedDirectories-replaces',                                                            
+         WatchedDirectories.lastModified AS 'WatchedDirectories-lastModified'
+    FROM 
+        MicroServiceChainLinks 
+        LEFT OUTER JOIN MicroServiceChains ON MicroServiceChains.startingLink = MicroServiceChainLinks.pk 
+        LEFT OUTER JOIN WatchedDirectories ON WatchedDirectories.chain = MicroServiceChains.pk 
+        LEFT OUTER JOIN TasksConfigs ON MicroServiceChainLinks.currentTask = TasksConfigs.pk 
+        LEFT OUTER JOIN MicroServiceChainLinksExitCodes ON MicroServiceChainLinks.pk = MicroServiceChainLinksExitCodes.microServiceChainLink 
+        LEFT OUTER JOIN StandardTasksConfigs ON TasksConfigs.taskTypePKReference = StandardTasksConfigs.pk;
+
+/*
+To help find all columns for above view
+mysql -u root MCP --execute "SELECT CONCAT('        ', table_name, '.', column_name, ' AS \'', table_name, '-', column_name, '\', ') AS columns
+FROM 
+    information_schema.columns
+WHERE 
+    table_schema = 'MCP' AND table_name = 'MicroServiceChainLinks'
+    OR table_schema = 'MCP' AND table_name = 'MicroServiceChains'
+    OR table_schema = 'MCP' AND table_name = 'WatchedDirectories'
+    OR table_schema = 'MCP' AND table_name = 'TasksConfigs'
+    OR table_schema = 'MCP' AND table_name = 'MicroServiceChainLinksExitCodes'
+    OR table_schema = 'MCP' AND table_name = 'StandardTasksConfigs'   
+GROUP BY 
+    table_name, column_name
+ORDER BY 
+    table_name, ordinal_position;"
+*/
+
 -- /VIEWS --
 
