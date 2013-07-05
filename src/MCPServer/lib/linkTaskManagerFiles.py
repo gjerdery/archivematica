@@ -47,13 +47,14 @@ class linkTaskManagerFiles:
         self.jobChainLink = jobChainLink
         self.exitCode = 0
         self.clearToNextLink = False
-        sql = """SELECT * FROM StandardTasksConfigs where pk = '%s'""" % (pk.__str__())
+        sql = """SELECT pk, filterFileEnd, filterFileStart, filterSubDir, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments, filterFileGrpUse FROM StandardTasksConfigs where pk = '%s'""" % (pk.__str__())
         c, sqlLock = databaseInterface.querySQL(sql)
         row = c.fetchone()
         while row != None:
             filterFileEnd = deUnicode(row[1])
             filterFileStart = deUnicode(row[2])
             filterSubDir = deUnicode(row[3])
+            filterFileGrpUse = deUnicode(row[9])
             requiresOutputLock = row[4]
             self.standardOutputFile = deUnicode(row[5])
             self.standardErrorFile = deUnicode(row[6])
@@ -77,14 +78,13 @@ class linkTaskManagerFiles:
                 if not os.path.basename(file).startswith(filterFileStart):
                     continue
             if filterSubDir:
-                #print "file", file, type(file)
-                #print unit.pathString, type(unit.pathString)
-                #filterSubDir = filterSubDir.encode('utf-8')
-                #print filterSubDir, type(filterSubDir)
-
                 if not file.startswith(unit.pathString + filterSubDir):
                     continue
-
+            
+            if filterFileGrpUse:
+                if filterFileGrpUse != fileUnit.fileGrpUse:
+                    continue 
+                
             standardOutputFile = self.standardOutputFile
             standardErrorFile = self.standardErrorFile
             execute = self.execute
@@ -97,7 +97,7 @@ class linkTaskManagerFiles:
                             execute, arguments, standardOutputFile, standardErrorFile = passVar.replace(execute, arguments, standardOutputFile, standardErrorFile)
                 elif isinstance(self.jobChainLink.passVar, replacementDic):
                     execute, arguments, standardOutputFile, standardErrorFile = self.jobChainLink.passVar.replace(execute, arguments, standardOutputFile, standardErrorFile)
-
+                    
             commandReplacementDic = fileUnit.getReplacementDic()
             for key in commandReplacementDic.iterkeys():
                 value = commandReplacementDic[key].replace("\"", ("\\\""))
