@@ -72,10 +72,10 @@ def onceExtracted(command):
             taskUUID = sys.argv[5].__str__()
             packageFileUUID = sys.argv[6].__str__()
 
-            filePathRelativeToSIP = ef.replace(sipDirectory,"%transferDirectory%", 1)
+!            filePathRelativeToSIP = ef.replace(sipDirectory,"%transferDirectory%", 1)
             print "File Extracted:: {" + fileUUID + "} ", filePathRelativeToSIP
             eventDetail="Unpacked from: {" + packageFileUUID + "}" + filePathRelativeToSIP
-            addFileToTransfer(filePathRelativeToSIP, fileUUID, transferUUID, taskUUID, date, sourceType="unpacking", eventDetail=eventDetail)
+!            addFileToTransfer(filePathRelativeToSIP, fileUUID, transferUUID, taskUUID, date, sourceType="unpacking", eventDetail=eventDetail)
             updateSizeAndChecksum(fileUUID, ef, date, uuid.uuid4.__str__())
 
 

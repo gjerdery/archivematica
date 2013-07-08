@@ -233,9 +233,14 @@ function example() {
   fi
 }
 
+function usage() {
+    echo Please use one of the following, or no arguments.
+    tail -n 10 "${0}"
+}
+
 # Run only one function if given
 if [ ! -z ${1} ]; then
-  ${1}
+  ${1} || usage
   exit
 fi
 
