@@ -36,7 +36,7 @@ fileTitle = ""
 fileExtension = ""
 fileDirectory = ""
 fileFullName = ""
-def setFileIn(fileIn=sys.argv[1]):
+def setFileIn(fileIn):
     global fileTitle
     global fileExtension
     global fileDirectory
@@ -73,8 +73,6 @@ def setFileIn(fileIn=sys.argv[1]):
     #print "fileDirectory", fileDirectory
     #print "fileFullName", fileFullName
 
-
-setFileIn()
 
 commandObjects = {}
 groupObjects = {}
@@ -155,6 +153,7 @@ class Command:
         #Do a dictionary replacement.
         #Replace replacement strings
         global replacementDic
+        print replacementDic
 
         #for each key replace all instances of the key in the command string
         for key, value in replacementDic.iteritems():
@@ -257,9 +256,10 @@ class Group:
         members
 
 
-def main(fileName):
+def main(filePath):
     #determin the pk's of the Command Linkers
-    cls = identifyCommands(fileName)
+    setFileIn(filePath)
+    cls = identifyCommands(filePath)
 
     if cls == []:
         print "Nothing to do"

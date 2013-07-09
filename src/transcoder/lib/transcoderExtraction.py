@@ -37,20 +37,15 @@ global extractedCount
 extractedCount = 1
 removeOnceExtracted = True
 
-date = sys.argv[4].__str__().split(".", 1)[0]
-replacementDic = { \
-        "%inputFile%": transcoder.fileFullName, \
-        "%outputDirectory%": transcoder.fileFullName + '-' + date \
-        }
 
 def onceExtracted(command):
     extractedFiles = []
     print "TODO - Metadata regarding removal of extracted archive"
     if removeOnceExtracted:
-        packageFileUUID = sys.argv[6].__str__()
-        sipDirectory = sys.argv[2].__str__()
+        packageFileUUID = opts.fileUUID
+        sipDirectory = opts.unitDirectory
         os.remove(replacementDic["%inputFile%"])
-        currentLocation =  replacementDic["%inputFile%"].replace(sipDirectory, "%transferDirectory%", 1)
+        currentLocation =  replacementDic["%inputFile%"].replace(sipDirectory, "%%%s%%" % (opts.unitReplacementString), 1)
         fileWasRemoved(packageFileUUID, eventOutcomeDetailNote = "removed from: " + currentLocation)
 
     print "OUTPUT DIRECTORY: ", replacementDic["%outputDirectory%"]
@@ -66,28 +61,36 @@ def onceExtracted(command):
         #print "File Extracted:", ef
         if True: #Add the file to the SIP
             #<arguments>"%relativeLocation%" "%SIPObjectsDirectory%" "%SIPLogsDirectory%" "%date%" "%taskUUID%" "%fileUUID%"</arguments>
-            sipDirectory = sys.argv[2].__str__()
-            transferUUID = sys.argv[3].__str__()
-            date = sys.argv[4].__str__()
-            taskUUID = sys.argv[5].__str__()
-            packageFileUUID = sys.argv[6].__str__()
+            sipDirectory = opts.unitDirectory
+            transferUUID = opts.unitUUID
+            date = opts.date
+            taskUUID = opts.taskUUID
+            packageFileUUID = opts.fileUUID
 
-!            filePathRelativeToSIP = ef.replace(sipDirectory,"%transferDirectory%", 1)
+            filePathRelativeToSIP = ef.replace(sipDirectory,"%%%s%%" % (opts.unitReplacementString), 1)
             print "File Extracted:: {" + fileUUID + "} ", filePathRelativeToSIP
             eventDetail="Unpacked from: {" + packageFileUUID + "}" + filePathRelativeToSIP
-!            addFileToTransfer(filePathRelativeToSIP, fileUUID, transferUUID, taskUUID, date, sourceType="unpacking", eventDetail=eventDetail)
+            if "transferDirectory" == opts.unitReplacementString:
+                addFileToTransfer(filePathRelativeToSIP, fileUUID, transferUUID, taskUUID, date, sourceType="unpacking", eventDetail=eventDetail)
+            elif "sipDirectory" == opts.unitReplacementString:
+                addFileToSIP(filePathRelativeToSIP, fileUUID, transferUUID, taskUUID, date, sourceType="unpacking", eventDetail=eventDetail)
+            else:
+                print >>sys.stderr, "INVALID opts.unitReplacementString"
+                raise
             updateSizeAndChecksum(fileUUID, ef, date, uuid.uuid4.__str__())
 
 
         run = sys.argv[0].__str__() + \
         " \"" + transcoder.escapeForCommand(ef) + "\""
         if True: #Add the file to the SIP
-            run = run + " \"" + transcoder.escapeForCommand(sys.argv[2].__str__()) + "\"" + \
-            " \"" + transcoder.escapeForCommand(sys.argv[3].__str__()) + "\"" + \
-            " \"" + transcoder.escapeForCommand(sys.argv[4].__str__()) + "\"" + \
-            " \"" + transcoder.escapeForCommand(sys.argv[5].__str__()) + "\"" + \
-            " \"" + fileUUID + "\""
-
+            run = run + \
+            " --filePath \"%s\"" % (ef) + \
+            " --unitDirectory \"%s\"" % (opts.unitDirectory)  + \
+            " --unitUUID \"%s\"" % (opts.unitUUID)  + \
+            " --date \"%s\"" % (opts.date)  + \
+            " --taskUUID \"%s\"" % (uuid.uuid4.__str__())  + \
+            " --fileUUID \"%s\"" % (fileUUID)  + \
+            " --unitReplacementString \"%s\"" % (opts.unitReplacementString)  
         exitCode, stdOut, stdError = executeOrRun("command", run)
         print stdOut
         print >>sys.stderr, stdError
@@ -162,13 +165,35 @@ def identifyCommands(fileName):
             break
     return ret
 
+def parseOptions():
+    from optparse import OptionParser
+    parser = OptionParser()
+    parser.add_option("-p",  "--filePath", action="store", dest="filePath", default="")
+    parser.add_option("-u",  "--unitDirectory", action="store", dest="unitDirectory", default="") 
+    parser.add_option("-i",  "--unitUUID", action="store", dest="unitUUID", default="")
+    parser.add_option("-d",  "--date", action="store", dest="date", default="")
+    parser.add_option("-t",  "--taskUUID", action="store", dest="taskUUID", default="")
+    parser.add_option("-f",  "--fileUUID", action="store", dest="fileUUID", default="")
+    parser.add_option("-r",  "--unitReplacementString", action="store", dest="unitReplacementString", default="") 
+    return parser.parse_args()
+    #--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "transferDirectory"
+
+    
+
 if __name__ == '__main__':
     #while 1:
     #    import time
     #    time.sleep(10)
+    (opts, args) = parseOptions()
+    date = opts.date.split(".", 1)[0]
+    replacementDic = { \
+        "%inputFile%": opts.filePath, \
+        "%outputDirectory%": opts.filePath + '-' + date \
+        }
+
     transcoder.onSuccess = onceExtracted
     transcoder.identifyCommands = identifyCommands
     transcoder.replacementDic = replacementDic
-    filename = sys.argv[1].__str__()
-    print filename
-    main(filename)
+    filePath = opts.filePath
+    print filePath
+    main(filePath)
