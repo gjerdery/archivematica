@@ -878,6 +878,7 @@ SET @TasksConfigPKReference = 'dbaffe2b-8f4b-4e5c-a0fb-462ff119c4be';
 SET @MicroServiceChainLink = 'acc07bf1-2c5a-4ecc-8ad7-4a8bda90cb4d';
 SET @MicroServiceChainLinksExitCodes = '7c2caccc-9883-43f4-9ec8-9ad642ec16db';
 SET @defaultNextChainLink = @MoveSIPToFailedLink;
+SET @NextMicroServiceChainLink = @yLink;
 
 INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
     VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImage', FALSE, NULL, NULL, 'setFileGrpUse_v0.0', '"%fileUUID%" "original"');
@@ -995,7 +996,7 @@ SET @MicroServiceChainLinksExitCodes = '6e5e8199-0de8-4389-8ce7-fbcad3cc843d';
 SET @defaultNextChainLink = @MoveSIPToFailedLink;
 
 INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
-    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImage', FALSE, NULL, NULL, 'extractDiskImages_v0.0', '"%relativeLocation%" "%SIPObjectsDirectory%" "%SIPLogsDirectory%" "%date%" "%taskUUID%" "%fileUUID%"');
+    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImage', FALSE, NULL, NULL, 'extractDiskImages_v0.0', '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "sipDirectory"');
 INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
     VALUES
     (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'Extract files from disk images');
@@ -1006,9 +1007,22 @@ INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode
 SET @NextMicroServiceChainLink = @MicroServiceChainLink;
 
 
+-- move to processing directory
+SET @TasksConfig = '74146fe4-365d-4f14-9aae-21eafa7d8393';
+SET @MicroServiceChainLink = '8ac1fc42-e8c7-4049-ab04-91eecefc2ffb';
+SET @MicroServiceChainLinksExitCodes = 'df11f6c9-31ef-4c96-bc99-d69ec98e590e';
+SET @defaultNextChainLink = @MoveSIPToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
 SET @MicroServiceChain = 'ea8c5f11-0a86-41c5-b7fb-b63154ce9e45';
 INSERT INTO MicroServiceChains (pk, startingLink, description)
-    VALUES (@MicroServiceChain, @MicroServiceChainLink, 'Do not extract disk images');
+    VALUES (@MicroServiceChain, @MicroServiceChainLink, 'Extract disk images');
 SET @ExtractDiskImagesChain = @MicroServiceChain;
 
 
@@ -1168,7 +1182,7 @@ SET @MicroServiceChainLinksExitCodes = 'ebee1dd1-bc9b-4d58-b815-3a69be33d6a4';
 SET @defaultNextChainLink = @MoveSIPToFailedLink;
 
 INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
-    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImage', FALSE, NULL, NULL, 'fiwalk_v0.0', '"%relativeLocation%" "%date%" "%taskUUID%" "%fileUUID%"');
+    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImage', FALSE, '%SIPLogsDirectory%fiwalk-%fileUUID%.xml', NULL, 'fiwalk_v0.0', '"%relativeLocation%" "%date%" "%taskUUID%" "%fileUUID%"');
 INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
     VALUES
     (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'Run Fiwalk');

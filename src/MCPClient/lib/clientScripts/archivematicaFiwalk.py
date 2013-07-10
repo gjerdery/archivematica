@@ -328,8 +328,8 @@ if __name__ == '__main__':
             #return retcode
             quit(retcode)
         #try:
-        tree = etree.XML(output[0])
-        print etree.tostring(tree, pretty_print=True )
+        #tree = etree.XML(output[0])
+        #print etree.tostring(tree, pretty_print=True )
         #except:
             #print >>sys.stderr, "Failed to read Fits's xml."
             #exit(2)
