@@ -101,6 +101,7 @@ retryNormalizeRemoveNormalized_v0.0 = %clientScriptsDirectory%retryNormalizeRemo
 sanitizeObjectNames_v0.0 = %clientScriptsDirectory%sanitizeObjectNames.py
 sanitizeSIPName_v0.0 = %clientScriptsDirectory%sanitizeSIPName.py
 setDirectoryPermissionsForAppraisal_v0.0 = %clientScriptsDirectory%setDirectoryPermissionsForAppraisal.sh
+setFileGrpUse_v0.0 = %clientScriptsDirectory%setFileGrpUse.py
 setFilePermission_v0.0 = chmod
 setMaildirFileGrpUseAndFileIDs_v0.0 = %clientScriptsDirectory%setMaildirFileGrpUseAndFileIDs.py
 setSIPQuarantine_v0.0 = %clientScriptsDirectory%quarantineSIP.sh

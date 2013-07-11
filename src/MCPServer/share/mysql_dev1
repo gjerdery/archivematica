@@ -872,7 +872,6 @@ SET @xLink = 'df02cac1-f582-4a86-b7cf-da98a58e279e';
 SET @yLink = 'f3be1ee1-8881-465d-80a6-a6f093d40ec2';
 
 -- do not extract disk images
-
 SET @TasksConfig = 'c37cf698-b70e-41df-a772-9848ab4bccfb';
 SET @TasksConfigPKReference = 'dbaffe2b-8f4b-4e5c-a0fb-462ff119c4be';
 SET @MicroServiceChainLink = 'acc07bf1-2c5a-4ecc-8ad7-4a8bda90cb4d';
@@ -903,6 +902,7 @@ SET @TasksConfigPKReference = 'f73a3075-4505-4245-a2f3-5fda39c3cfaf';
 SET @MicroServiceChainLink = 'ea7d9a67-d4a1-4700-89b7-8604c9c21347';
 SET @MicroServiceChainLinksExitCodes = 'fff56b88-c8a5-467e-b6af-d151ca153933';
 SET @defaultNextChainLink = @MoveSIPToFailedLink;
+SET @NextMicroServiceChainLink = @yLink;
 
 INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
     VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImageExtractedFile', FALSE, NULL, NULL, 'setFileGrpUse_v0.0', '"%fileUUID%" "original"');
@@ -920,7 +920,7 @@ SET @TasksConfig = 'eba2dbaf-99d6-4eca-9615-d407ff1818e8';
 SET @TasksConfigPKReference = '5903731d-13ed-425f-8c58-4d7e41231d82';
 SET @MicroServiceChainLink = '1a44d041-2cf4-486c-b2b9-f7d6399a0314';
 SET @MicroServiceChainLinksExitCodes = 'f9f4e5db-5f6b-4b01-8155-bf9c3087a9d2';
-SET @defaultNextChainLink = @MoveSIPToFailedLink;
+SET @defaultNextChainLink = @NextMicroServiceChainLink;
 
 INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
     VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImageExtractedFile', FALSE, NULL, NULL, 'FITS_v0.0', '"%relativeLocation%" "%SIPLogsDirectory%fileMeta/%fileUUID%.xml" "%date%" "%taskUUID%" "%fileUUID%" "%fileGrpUse%"');
@@ -977,7 +977,7 @@ SET @MicroServiceChainLinksExitCodes = '39a73e9c-26aa-446a-b713-3ade36fdbf49';
 SET @defaultNextChainLink = @MoveSIPToFailedLink;
 
 INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
-    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImageExtractedFile', FALSE, NULL, NULL, 'setFileGrpUse_v0.0', '"%fileUUID%" "original"');
+    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImageExtractedFile', FALSE, NULL, NULL, 'updateSizeAndChecksum_v0.0', '--filePath "%relativeLocation%" --fileUUID "%fileUUID%" --eventIdentifierUUID "%taskUUID%" --date "%date%"');
 INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
     VALUES
     (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'checksum extracted files');
