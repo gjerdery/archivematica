@@ -76,13 +76,13 @@ def addAccessionEvent(fileUUID, transferUUID, date):
                eventOutcome="", \
                eventOutcomeDetailNote=eventOutcomeDetailNote)
     
-def addFileToSIP(filePathRelativeToSIP, fileUUID, sipUUID, taskUUID, date, sourceType="ingestion", use="original"):
+def addFileToSIP(filePathRelativeToSIP, fileUUID, sipUUID, taskUUID, date, sourceType="ingestion", use="original", eventDetail=""):
     insertIntoFiles(fileUUID, filePathRelativeToSIP, date, sipUUID=sipUUID, use=use)
     insertIntoEvents(fileUUID=fileUUID, \
                    eventIdentifierUUID=taskUUID, \
                    eventType=sourceType, \
                    eventDateTime=date, \
-                   eventDetail="", \
+                   eventDetail=eventDetail, \
                    eventOutcome="", \
                    eventOutcomeDetailNote="")
 

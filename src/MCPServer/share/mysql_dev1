@@ -939,17 +939,17 @@ SET @NextMicroServiceChainLink = @MicroServiceChainLink;
 -- | 12d31cf0-cfc5-4ddb-a7d2-f71a8ff1dd0a | e9509ecf-be06-4572-b217-8ec3acb24ad1 |
 UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "transferDirectory"' WHERE pk = 'e9509ecf-be06-4572-b217-8ec3acb24ad1';
 -- | 3e7cc9e1-29ec-436f-92d7-0493a5b33c61 | 85419d3b-a0bf-402c-aa69-f5770a79904b |
-UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "sipDirectory"' WHERE pk = '85419d3b-a0bf-402c-aa69-f5770a79904b';
+UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "SIPDirectory"' WHERE pk = '85419d3b-a0bf-402c-aa69-f5770a79904b';
 -- | f140cc1f-1e0d-4eb1-aa93-8fa8ac52eca9 | dca1bdba-5086-4423-be6b-8c660f8537ac |
 UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "transferDirectory"' WHERE pk = 'dca1bdba-5086-4423-be6b-8c660f8537ac';
 -- | 28d4e61d-1f00-4e70-b79b-6a9779f8edc4 | dca1bdba-5086-4423-be6b-8c660f8537ac |
 UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "transferDirectory"' WHERE pk = 'dca1bdba-5086-4423-be6b-8c660f8537ac';
 -- | 78f8953a-11cd-4125-bab7-2ca76647bd7a | 85419d3b-a0bf-402c-aa69-f5770a79904b |
-UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "sipDirectory"' WHERE pk = '85419d3b-a0bf-402c-aa69-f5770a79904b';
+UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "SIPDirectory"' WHERE pk = '85419d3b-a0bf-402c-aa69-f5770a79904b';
 -- | 13a9fe23-c2c4-4340-ac47-4faeda4ba6b9 | 69efdb77-b9f7-4df1-afc1-05b2e39c830c |
 UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "transferDirectory"' WHERE pk = '69efdb77-b9f7-4df1-afc1-05b2e39c830c';
 -- | d8706e6e-7f38-4d98-9721-4f120156dca8 | 36cc5356-6db1-4f3e-8155-1f92f958d2a4 |
-UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "sipDirectory"' WHERE pk = '36cc5356-6db1-4f3e-8155-1f92f958d2a4';
+UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "SIPDirectory"' WHERE pk = '36cc5356-6db1-4f3e-8155-1f92f958d2a4';
 -- 
 SET @TasksConfig = 'e48033fe-c717-4e93-bc49-a5aa280294a3';
 SET @TasksConfigPKReference = '69efdb77-b9f7-4df1-afc1-05b2e39c830c';
@@ -958,7 +958,7 @@ SET @MicroServiceChainLinksExitCodes = 'e8a4dc42-c9cc-417a-8232-4020380791b3';
 SET @defaultNextChainLink = @MoveSIPToFailedLink;
 
 INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
-    VALUES (@TasksConfigPKReference, NULL, NULL, 'objects', 'diskImageExtractedFile', FALSE, NULL, NULL, 'transcoderExtractPackages_v0.0', '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "sipDirectory"');
+    VALUES (@TasksConfigPKReference, NULL, NULL, 'objects', 'diskImageExtractedFile', FALSE, NULL, NULL, 'transcoderExtractPackages_v0.0', '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "SIPDirectory"');
 INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
     VALUES
     (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'Extrack packages');
@@ -996,7 +996,7 @@ SET @MicroServiceChainLinksExitCodes = '6e5e8199-0de8-4389-8ce7-fbcad3cc843d';
 SET @defaultNextChainLink = @MoveSIPToFailedLink;
 
 INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
-    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImage', FALSE, NULL, NULL, 'extractDiskImages_v0.0', '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "sipDirectory"');
+    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImage', FALSE, NULL, NULL, 'extractDiskImages_v0.0', '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "SIPDirectory"');
 INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
     VALUES
     (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'Extract files from disk images');

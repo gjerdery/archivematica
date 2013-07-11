@@ -23,11 +23,9 @@
 import sys
 import os
 import uuid
-from transcoder import main
-from executeOrRunSubProcess import executeOrRun
-import transcoder
-#from premisXMLlinker import xmlNormalize
+from diskImageExtraction.archivematicaExtractDiskImage import main
 sys.path.append("/usr/lib/archivematica/archivematicaCommon")
+from executeOrRunSubProcess import executeOrRun
 from fileOperations import addFileToTransfer
 from databaseFunctions import fileWasRemoved
 from fileOperations import updateSizeAndChecksum
@@ -174,26 +172,29 @@ def parseOptions():
     parser.add_option("-d",  "--date", action="store", dest="date", default="")
     parser.add_option("-t",  "--taskUUID", action="store", dest="taskUUID", default="")
     parser.add_option("-f",  "--fileUUID", action="store", dest="fileUUID", default="")
-    parser.add_option("-r",  "--unitReplacementString", action="store", dest="unitReplacementString", default="") 
+    parser.add_option("-r",  "--unitReplacementString", action="store", dest="unitReplacementString", default="")
+    parser.add_option("-s",  "--sharedDirectoryPath", action="store", dest="sharedDirectoryPath", default="/var/archivematica/sharedDirectory/") 
     return parser.parse_args()
-    #--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "transferDirectory"
-
-    
 
 if __name__ == '__main__':
+    exitCode = 0
     while False:
         import time
         time.sleep(10)
     (opts, args) = parseOptions()
+    print opts.filePath
     date = opts.date.split(".", 1)[0]
     replacementDic = { \
         "%inputFile%": opts.filePath, \
         "%outputDirectory%": opts.filePath + '-' + date \
         }
 
-    transcoder.onSuccess = onceExtracted
-    transcoder.identifyCommands = identifyCommands
-    transcoder.replacementDic = replacementDic
-    filePath = opts.filePath
-    print filePath
-    main(filePath)
+    basename = opts.filePath
+    fileName, ext = os.path.splitext(basename)
+    ext = ext.lower()
+    if ext in ['.iso']:
+        outputDirectory = replacementDic['%outputDirectory%'] 
+        exitCode += main(opts, outputDirectory)
+        
+    exit(exitCode)
+

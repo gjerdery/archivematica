@@ -30,6 +30,7 @@ import uuid
 
 sys.path.append("/usr/lib/archivematica/archivematicaCommon")
 import databaseInterface
+from fileOperations import addFileToSIP
 
 class fiwalkFile():
     def __init__(self, file):
@@ -55,23 +56,15 @@ def getFiwalkFromTransfer(fileUUID, sharedDirectory):
     print fiwalkFilePath 
     tree = etree.parse(fiwalkFilePath)
     return tree.getroot()
-    
-def parseArgs():
-    return {
-           'fileUUID' : "eea6187f-36f7-42e1-8dd8-2a42875c380f",
-           'filePath' : "/var/archivematica/sharedDirectory/currentlyProcessing/disk_image-cb3276a7-4e15-4d3a-8ebb-fbc23173f87a/objects/archivematica-0.7-alpha.iso",
-           'sharedDirectory' : "/var/archivematica/sharedDirectory/",
-           'outputDirectory' : "/tmp/blah"
-    }
-
-if __name__ == '__main__':
+   
+def main(opts, outputDirectory):
+    global exitCode
     exitCode = 0
-    opts = parseArgs()
-    fiwalk = getFiwalkFromTransfer(opts['fileUUID'], opts['sharedDirectory'])
+    fiwalk = getFiwalkFromTransfer(opts.fileUUID, opts.sharedDirectoryPath)
     
     for volume in fiwalk.findall("volume"):
         offset = volume.get('offset')
-        volumeDirectory = os.path.join(opts['outputDirectory'], "volume %s" % (offset))
+        volumeDirectory = os.path.join(outputDirectory, "volume %s" % (offset))
         if not os.path.isdir(volumeDirectory):
             os.makedirs(volumeDirectory)
 
@@ -82,20 +75,22 @@ if __name__ == '__main__':
                 continue
             
             command = 'icat -o %(offset)s %(imageFilePath)s %(inode)s' % \
-                {'offset':offset, 'imageFilePath':opts['filePath'], 'inode':ffile.inode}
+                {'offset':offset, 'imageFilePath':opts.filePath, 'inode':ffile.inode}
             try:
                 partition = "partition %s" % (ffile.partition)
                 filePath = os.path.join(volumeDirectory, partition, ffile.filename)
-                print "extracting: ", filePath
+                filePathRelativeToSIP = filePath.replace(opts.unitDirectory, "%%%s%%" % (opts.unitReplacementString), 1)
+                fileUUID = str(uuid.uuid4())
+                print "extracting:{%s}%s" % (fileUUID, filePathRelativeToSIP) 
                 dirPath = os.path.dirname(filePath)
                 if not os.path.isdir(dirPath):
                     os.makedirs(dirPath)
                 file2 = open(filePath, "w")
                 p = subprocess.Popen(shlex.split(command), stdin=subprocess.PIPE, stdout=file2, stderr=subprocess.PIPE)
-        
                 #p.wait()
                 output = p.communicate()
                 retcode = p.returncode
+                file2.close()
         
                 if output[0]:
                     print output[0]
@@ -108,9 +103,10 @@ if __name__ == '__main__':
                     print output[1]# sError
                     #return retcode
                     exitCode+=1
+                eventDetail="Unpacked from: {" + opts.fileUUID + "}" + opts.filePath
+                addFileToSIP(filePathRelativeToSIP, fileUUID, opts.unitUUID, str(uuid.uuid4), opts.date, sourceType="unpacking", eventDetail=eventDetail, use="diskImageExtractedFile")
             except OSError, ose:
                 print >>sys.stderr, "Execution failed:", ose
                 #return 1
                 exitCode+=1
-                
-    exit(exitCode)
+    return exitCode
