@@ -192,7 +192,7 @@ if __name__ == '__main__':
     basename = opts.filePath
     fileName, ext = os.path.splitext(basename)
     ext = ext.lower()
-    if ext in ['.iso']:
+    if ext in ['.iso', '.e01', '.dmg', '.cue', '.ad1', '.dsk', '.img']:
         outputDirectory = replacementDic['%outputDirectory%'] 
         exitCode += main(opts, outputDirectory)
         

@@ -1036,7 +1036,7 @@ SET @defaultNextChainLink = @NextMicroServiceChainLink;
 
 INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
     VALUES
-    (@TasksConfig, '61fb3874-8ef6-49d3-8a2d-3cb66e86a30c', @TasksConfigPKReference, 'Normalize');
+    (@TasksConfig, '61fb3874-8ef6-49d3-8a2d-3cb66e86a30c', @TasksConfigPKReference, 'Extract files from disk images');
 INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
     VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
 
@@ -1160,7 +1160,7 @@ SET @TasksConfig = '2b7e31b3-1136-45b6-acbf-2b061ed9a36a';
 SET @TasksConfigPKReference = 'e6b17941-f641-4578-b298-f66570524938';
 SET @MicroServiceChainLink = '50b08fd3-ce54-4a11-914f-0b1fc84c96e6';
 SET @MicroServiceChainLinksExitCodes = '0101395d-edf8-4a17-b4ed-dcb2342d549e';
-SET @defaultNextChainLink = @MoveSIPToFailedLink;
+SET @defaultNextChainLink = @NextMicroServiceChainLink;
 
 INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
     VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImage', FALSE, NULL, NULL, 'bulkExtractor_v0.0', '"%relativeLocation%" "%date%" "%taskUUID%" "%fileUUID%" %SIPDirectory%');
@@ -1179,7 +1179,7 @@ SET @TasksConfig = '8ed61984-80cb-410f-874f-b908771f9f75';
 SET @TasksConfigPKReference = '0f004f5e-1083-4aa7-ab9f-fd347bcd4078';
 SET @MicroServiceChainLink = '158ae2e0-7c26-4339-a1b0-d5089ff82d37';
 SET @MicroServiceChainLinksExitCodes = 'ebee1dd1-bc9b-4d58-b815-3a69be33d6a4';
-SET @defaultNextChainLink = @MoveSIPToFailedLink;
+SET @defaultNextChainLink = @NextMicroServiceChainLink;
 
 INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
     VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImage', FALSE, '%SIPLogsDirectory%fiwalk-%fileUUID%.xml', NULL, 'fiwalk_v0.0', '"%relativeLocation%" "%date%" "%taskUUID%" "%fileUUID%"');
