@@ -306,7 +306,7 @@ if __name__ == '__main__':
     fileUUID  = sys.argv[4]
 
     
-    command = "fiwalk -x \"" + escapeForCommand(target) + "\""
+    command = "fiwalk -x \"" + escapeForCommand(target) + "\" -c /usr/lib/archivematica/archivematicaCommon/externals/fiwalkPlugins/ficonfig.txt"
     #print >>sys.stderr, command
     #print >>sys.stderr,  shlex.split(command)
     try:
