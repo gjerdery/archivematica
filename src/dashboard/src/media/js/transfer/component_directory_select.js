@@ -32,14 +32,32 @@ function createDirectoryPicker(baseDirectory, modalCssId, targetCssId) {
   };
 
   selector.options.entryDisplayFilter = function(entry) {
-    // if a file and not an archive file, then hide
-    if (
-      entry.children == undefined
-      && entry.attributes.name.toLowerCase().indexOf('.zip') == -1
-      && entry.attributes.name.toLowerCase().indexOf('.tgz') == -1
-      && entry.attributes.name.toLowerCase().indexOf('.tar.gz') == -1
-    ) {
-        return false;
+    // if a file and not an archive file or disk image, then hide
+    var nornalizedEntry = entry.attributes.name.replace(/^\s+|\s+$/g, '').toLowerCase()
+        allowedExtensions = [
+          'zip',
+          'tgz',
+          'tar.gz',
+          'e01',
+          'iso',
+          'dmg',
+          'cue',
+          'ad1',
+          'dsk',
+          'bin',
+          'raw'
+        ],
+        hasAllowedExtension = false;
+
+    for (var i = 0; i < allowedExtensions.length; i++) {
+      var extension = allowedExtensions[i];
+      if (nornalizedEntry.indexOf(extension, nornalizedEntry.length - extension.length) !== -1) {
+        hasAllowedExtension = true;
+      }
+    }
+
+    if (entry.children == undefined && !hasAllowedExtension) {
+      return false;
     }
     return true;
   };

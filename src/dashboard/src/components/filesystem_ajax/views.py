@@ -311,7 +311,8 @@ def copy_to_start_transfer(request):
           'zipped bag':   'baggitZippedDirectory',
           'dspace':       'Dspace',
           'maildir':      'maildir',
-          'TRIM':         'TRIM'
+          'TRIM':         'TRIM',
+          'disk image':   'diskImage'
         }
 
         try:
