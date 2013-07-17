@@ -227,9 +227,38 @@ def send_file(request, filepath):
     response['Content-Length'] = os.path.getsize(filepath)
     return response
 
-def file_is_an_archive(file):
+def file_has_one_of_these_extensions(file, extensions):
     file = file.lower()
-    return file.endswith('.zip') or file.endswith('.tgz') or file.endswith('.tar.gz')
+
+    for extension in extensions:
+        if file.endswith('.' + extension):
+            return True
+
+    return False
+
+def file_is_a_disk_image(file):
+    disk_image_extensions = [
+      'iso',
+      'e01',
+      'dmg',
+      'cue',
+      'ad1',
+      'dsk',
+      'img',
+      'bin',
+      'raw'
+    ]
+
+    return file_has_one_of_these_extensions(file, disk_image_extensions)
+
+def file_is_an_archive(file):
+    archive_extensions = [
+      'zip',
+      'tgz',
+      'tar.gz'
+    ]
+
+    return file_has_one_of_these_extensions(file, archive_extensions)
 
 def feature_settings():
     return {
