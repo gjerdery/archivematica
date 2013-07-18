@@ -165,6 +165,17 @@ def delete(request):
         mimetype='application/json'
     )
 
+def get_transfer_metadata_set(request):
+    # create DB row
+    response = {
+      'id': 3
+    }
+
+    return HttpResponse(
+        simplejson.JSONEncoder().encode(response),
+        mimetype='application/json'
+    )
+
 def get_temp_directory(request):
     temp_dir = tempfile.mkdtemp()
 

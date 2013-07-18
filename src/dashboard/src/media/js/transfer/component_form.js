@@ -54,6 +54,7 @@ var TransferComponentFormView = Backbone.View.extend({
   startTransfer: function(transfer) {
     var path;
 
+console.log('S:' + transferMetadataSetRowId);
     $('.transfer-component-activity-indicator').show();
     // get path to temp directory in which to copy individual transfer
     // components
