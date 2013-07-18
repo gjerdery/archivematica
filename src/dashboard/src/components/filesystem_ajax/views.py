@@ -205,24 +205,27 @@ def copy_transfer_component(request):
                 paths_copied = 0
 
                 # cycle through each path copying files/dirs inside it to transfer dir
-                for entry in sorted_directory_list(path):
-                    entry_path = os.path.join(path, entry)
-                    if os.path.isdir(entry_path):
-                        rsync_copy(entry_path, transfer_dir)
-                        """
-                        destination_dir = os.path.join(transfer_dir, entry)
-                        try:
-                            shutil.copytree(
-                                entry_path,
-                                destination_dir
-                            )
-                        except:
-                            error = 'Error copying from ' + entry_path + ' to ' + destination_dir + '. (' + str(sys.exc_info()[0]) + ')'
-                        """
-                    else:
-                        rsync_copy(entry_path, transfer_dir)
-                        #shutil.copy(entry_path, transfer_dir)
+                if os.path.isdir(path):
+                    for entry in sorted_directory_list(path):
+                        entry_path = os.path.join(path, entry)
+                        if os.path.isdir(entry_path):
+                            rsync_copy(entry_path, transfer_dir)
+                            """
+                            destination_dir = os.path.join(transfer_dir, entry)
+                            try:
+                                shutil.copytree(
+                                    entry_path,
+                                    destination_dir
+                                )
+                            except:
+                                error = 'Error copying from ' + entry_path + ' to ' + destination_dir + '. (' + str(sys.exc_info()[0]) + ')'
+                            """
+                        else:
+                            rsync_copy(entry_path, transfer_dir)
 
+                        paths_copied = paths_copied + 1
+                else:
+                    rsync_copy(path, transfer_dir)
                     paths_copied = paths_copied + 1
 
     response = {}
