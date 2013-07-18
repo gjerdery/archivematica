@@ -27,6 +27,7 @@ import uuid
 import subprocess
 import os
 import uuid
+from archivematicaExtractDiskImageFunctionsLibrary import getTSKImages
 
 sys.path.append("/usr/lib/archivematica/archivematicaCommon")
 import databaseInterface
@@ -74,8 +75,8 @@ def main(opts, outputDirectory):
                 #todo - empty directories
                 continue
             
-            command = 'icat -o %(offset)s %(imageFilePath)s %(inode)s' % \
-                {'offset':offset, 'imageFilePath':opts.filePath, 'inode':ffile.inode}
+            command = 'icat -o %(offset)s "%(imageFilePath)s" %(inode)s' % \
+                {'offset':offset, 'imageFilePath':getTSKImages(opts.filePath), 'inode':ffile.inode}
             try:
                 partition = "partition %s" % (ffile.partition)
                 filePath = os.path.join(volumeDirectory, partition, ffile.filename)

@@ -30,12 +30,12 @@ from fileOperations import addFileToSIP
 import databaseInterface
 
 def getUse(filePath, fileGrpUse):
-    diskImageExtensions = ['.iso', '.e01', '.dmg', '.cue', '.ad1', '.dsk', '.img']
+    diskImageExtensions = ['.iso', '.e01', '.dmg', '.ad1', '.dsk', '.img', '.bin', '.raw', '.dd.001', '.001', '.i00']
     ret = fileGrpUse
-    fileName, fileExtension = os.path.splitext(os.path.basename(filePath))
-    fileExtension = fileExtension.lower()
-    if fileExtension in diskImageExtensions:
-        return "diskImage" 
+    basename = os.path.basename(filePath).lower()
+    for fileExtension in diskImageExtensions:
+        if basename.endswith(fileExtension): 
+            return "diskImage" 
     return ret
 
 
