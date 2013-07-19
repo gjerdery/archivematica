@@ -77,6 +77,7 @@ def main(opts, outputDirectory):
             
             command = 'icat -o %(offset)s "%(imageFilePath)s" %(inode)s' % \
                 {'offset':offset, 'imageFilePath':getTSKImages(opts.filePath), 'inode':ffile.inode}
+            print command
             try:
                 partition = "partition %s" % (ffile.partition)
                 filePath = os.path.join(volumeDirectory, partition, ffile.filename)

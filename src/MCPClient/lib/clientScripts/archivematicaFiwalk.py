@@ -29,7 +29,6 @@ from diskImageExtraction.archivematicaExtractDiskImageFunctionsLibrary import ge
 
 sys.path.append("/usr/lib/archivematica/archivematicaCommon")
 #import databaseInterface
-from archivematicaFunctions import escapeForCommand
 
 
 if __name__ == '__main__':
@@ -41,9 +40,9 @@ if __name__ == '__main__':
     fileUUID  = sys.argv[4]
 
     
-    command = "fiwalk -x \"" + escapeForCommand(getTSKImages(target)) + "\" -c /usr/lib/archivematica/archivematicaCommon/externals/fiwalkPlugins/ficonfig.txt"
-    #print >>sys.stderr, command
-    #print >>sys.stderr,  shlex.split(command)
+    command = "fiwalk -x \"" + getTSKImages(target) + "\" -c /usr/lib/archivematica/archivematicaCommon/externals/fiwalkPlugins/ficonfig.txt"
+    print >>sys.stderr, command
+    print >>sys.stderr,  shlex.split(command)
     try:
         p = subprocess.Popen(shlex.split(command), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 

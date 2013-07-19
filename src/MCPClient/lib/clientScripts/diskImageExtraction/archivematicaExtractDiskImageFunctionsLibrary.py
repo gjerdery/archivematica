@@ -31,12 +31,21 @@ def getTSKImages(filePath):
     
     #compare the other files in the directory, and look for multipart
     for file in os.listdir(dir):
-        fileName2, ext2 = os.path.splitext(filePath)
-        if ext2.lower() in [".txt", ".xml", ".csv", ".rtf", ".xml"]:
+        if not os.path.isfile(os.path.join(dir, file)):
+            continue
+        if file == fileName:
+            continue
+        fileName2, ext2 = os.path.splitext(file)
+        if ext2.lower() in [".txt", ".xml", ".csv", ".rtf", ".xml", ".cue"]:
             continue
         if fileName2 != fileName:
             continue
         ret.append(os.path.join(dir, file))
     return '" "'.join(ret)
+
+if __name__ == '__main__':
+    filePath = '/var/archivematica/sharedDirectory/failed/iso9660-udf-dcf99f99-be9f-4a9b-a3c3-ea35e5b40b70/objects/2005-A-073/2005-A-073-0003.iso'
+    print '"%s"' % (getTSKImages(filePath))
+    
         
     
