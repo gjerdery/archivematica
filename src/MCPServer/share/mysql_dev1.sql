@@ -962,3 +962,580 @@ INSERT INTO MicroServiceChainLinks(pk, microserviceGroup, defaultExitMessage, cu
 INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink, exitMessage) VALUES ('f5644951-ecaa-42bc-9286-ed4ee220b58f', '0915f727-0bc3-47c8-b9b2-25dc2ecef2bb', 0, '5fbc344c-19c8-48be-a753-02dac987428c', 'Completed successfully');
 UPDATE MicroServiceChainLinksExitCodes SET nextMicroServiceChainLink='0915f727-0bc3-47c8-b9b2-25dc2ecef2bb' WHERE microServiceChainLink='d55b42c8-c7c5-4a40-b626-d248d2bd883f';
 -- /Issue 5159
+
+-- <dev/issue-5037> forensic disk image ingest
+ALTER TABLE StandardTasksConfigs ADD filterFileGrpUse VARCHAR(50) AFTER filterSubDir;
+-- * modify SIP workflow
+SET @xLink = 'df02cac1-f582-4a86-b7cf-da98a58e279e';
+SET @yLink = 'f3be1ee1-8881-465d-80a6-a6f093d40ec2';
+
+-- do not extract disk images
+SET @TasksConfig = 'c37cf698-b70e-41df-a772-9848ab4bccfb';
+SET @TasksConfigPKReference = 'dbaffe2b-8f4b-4e5c-a0fb-462ff119c4be';
+SET @MicroServiceChainLink = 'acc07bf1-2c5a-4ecc-8ad7-4a8bda90cb4d';
+SET @MicroServiceChainLinksExitCodes = '7c2caccc-9883-43f4-9ec8-9ad642ec16db';
+SET @defaultNextChainLink = @MoveSIPToFailedLink;
+SET @NextMicroServiceChainLink = @yLink;
+
+INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
+    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImage', FALSE, NULL, NULL, 'setFileGrpUse_v0.0', '"%fileUUID%" "original"');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
+    VALUES
+    (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'Set disk images type');
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+
+SET @MicroServiceChain = '4293bccc-99a6-44b6-8067-1cdb078d1bdd';
+INSERT INTO MicroServiceChains (pk, startingLink, description)
+    VALUES (@MicroServiceChain, @MicroServiceChainLink, 'Do not extract disk images');
+SET @DoNotExtractDiskImagesChain = @MicroServiceChain;
+
+-- file grp use
+SET @TasksConfig = '0584ad63-0041-406f-9be2-c8c28c077301';
+SET @TasksConfigPKReference = 'f73a3075-4505-4245-a2f3-5fda39c3cfaf';
+SET @MicroServiceChainLink = 'ea7d9a67-d4a1-4700-89b7-8604c9c21347';
+SET @MicroServiceChainLinksExitCodes = 'fff56b88-c8a5-467e-b6af-d151ca153933';
+SET @defaultNextChainLink = @MoveSIPToFailedLink;
+SET @NextMicroServiceChainLink = @yLink;
+
+INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
+    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImageExtractedFile', FALSE, NULL, NULL, 'setFileGrpUse_v0.0', '"%fileUUID%" "original"');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
+    VALUES
+    (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'Set extracted files types');
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- fits
+SET @TasksConfig = 'eba2dbaf-99d6-4eca-9615-d407ff1818e8';
+SET @TasksConfigPKReference = '5903731d-13ed-425f-8c58-4d7e41231d82';
+SET @MicroServiceChainLink = '1a44d041-2cf4-486c-b2b9-f7d6399a0314';
+SET @MicroServiceChainLinksExitCodes = 'f9f4e5db-5f6b-4b01-8155-bf9c3087a9d2';
+SET @defaultNextChainLink = @NextMicroServiceChainLink;
+
+INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
+    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImageExtractedFile', FALSE, NULL, NULL, 'FITS_v0.0', '"%relativeLocation%" "%SIPLogsDirectory%fileMeta/%fileUUID%.xml" "%date%" "%taskUUID%" "%fileUUID%" "%fileGrpUse%"');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
+    VALUES
+    (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'Characterize and extract metadata on extracted files');
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+
+-- extract packages
+-- SELECT * FROM fullLinks where `StandardTasksConfigs-execute` like 'transcoderExtractPackages_v0.0' \G
+-- | 12d31cf0-cfc5-4ddb-a7d2-f71a8ff1dd0a | e9509ecf-be06-4572-b217-8ec3acb24ad1 |
+UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "transferDirectory"' WHERE pk = 'e9509ecf-be06-4572-b217-8ec3acb24ad1';
+-- | 3e7cc9e1-29ec-436f-92d7-0493a5b33c61 | 85419d3b-a0bf-402c-aa69-f5770a79904b |
+UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "SIPDirectory"' WHERE pk = '85419d3b-a0bf-402c-aa69-f5770a79904b';
+-- | f140cc1f-1e0d-4eb1-aa93-8fa8ac52eca9 | dca1bdba-5086-4423-be6b-8c660f8537ac |
+UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "transferDirectory"' WHERE pk = 'dca1bdba-5086-4423-be6b-8c660f8537ac';
+-- | 28d4e61d-1f00-4e70-b79b-6a9779f8edc4 | dca1bdba-5086-4423-be6b-8c660f8537ac |
+UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "transferDirectory"' WHERE pk = 'dca1bdba-5086-4423-be6b-8c660f8537ac';
+-- | 78f8953a-11cd-4125-bab7-2ca76647bd7a | 85419d3b-a0bf-402c-aa69-f5770a79904b |
+UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "SIPDirectory"' WHERE pk = '85419d3b-a0bf-402c-aa69-f5770a79904b';
+-- | 13a9fe23-c2c4-4340-ac47-4faeda4ba6b9 | 69efdb77-b9f7-4df1-afc1-05b2e39c830c |
+UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "transferDirectory"' WHERE pk = '69efdb77-b9f7-4df1-afc1-05b2e39c830c';
+-- | d8706e6e-7f38-4d98-9721-4f120156dca8 | 36cc5356-6db1-4f3e-8155-1f92f958d2a4 |
+UPDATE StandardTasksConfigs SET arguments = '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "SIPDirectory"' WHERE pk = '36cc5356-6db1-4f3e-8155-1f92f958d2a4';
+-- 
+SET @TasksConfig = 'e48033fe-c717-4e93-bc49-a5aa280294a3';
+SET @TasksConfigPKReference = '69efdb77-b9f7-4df1-afc1-05b2e39c830c';
+SET @MicroServiceChainLink = '13a9fe23-c2c4-4340-ac47-4faeda4ba6b9';
+SET @MicroServiceChainLinksExitCodes = 'e8a4dc42-c9cc-417a-8232-4020380791b3';
+SET @defaultNextChainLink = @MoveSIPToFailedLink;
+
+INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
+    VALUES (@TasksConfigPKReference, NULL, NULL, 'objects', 'diskImageExtractedFile', FALSE, NULL, NULL, 'transcoderExtractPackages_v0.0', '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "SIPDirectory"');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
+    VALUES
+    (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'Extrack packages');
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+
+-- checksum
+SET @TasksConfig = '3158424c-bebb-47b6-a8da-7d4c9881e58c';
+SET @TasksConfigPKReference = '2881fd3d-53ed-4aed-a278-0e4d4042dec7';
+SET @MicroServiceChainLink = 'b03745ab-c345-4c19-a18f-c96f07cd9928';
+SET @MicroServiceChainLinksExitCodes = '39a73e9c-26aa-446a-b713-3ade36fdbf49';
+SET @defaultNextChainLink = @MoveSIPToFailedLink;
+
+INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
+    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImageExtractedFile', FALSE, NULL, NULL, 'updateSizeAndChecksum_v0.0', '--filePath "%relativeLocation%" --fileUUID "%fileUUID%" --eventIdentifierUUID "%taskUUID%" --date "%date%"');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
+    VALUES
+    (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'checksum extracted files');
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+
+-- extract
+SET @TasksConfig = '30d1be3f-e993-44f9-bd4d-71d9a58e3cf3';
+SET @TasksConfigPKReference = '42570a08-0a59-4ea5-a7bd-208ac67ef48d';
+SET @MicroServiceChainLink = '0c901330-494d-4775-a04b-f7d16c8823d6';
+SET @MicroServiceChainLinksExitCodes = '6e5e8199-0de8-4389-8ce7-fbcad3cc843d';
+SET @defaultNextChainLink = @MoveSIPToFailedLink;
+
+INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
+    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImage', FALSE, NULL, NULL, 'extractDiskImages_v0.0', '--filePath "%relativeLocation%" --unitDirectory "%SIPDirectory%" --unitUUID "%SIPUUID%" --date "%date%" --taskUUID "%taskUUID%" --fileUUID "%fileUUID%" --unitReplacementString "SIPDirectory"');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
+    VALUES
+    (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'Extract files from disk images');
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+
+-- move to processing directory
+SET @TasksConfig = '74146fe4-365d-4f14-9aae-21eafa7d8393';
+SET @MicroServiceChainLink = '8ac1fc42-e8c7-4049-ab04-91eecefc2ffb';
+SET @MicroServiceChainLinksExitCodes = 'df11f6c9-31ef-4c96-bc99-d69ec98e590e';
+SET @defaultNextChainLink = @MoveSIPToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+SET @MicroServiceChain = 'ea8c5f11-0a86-41c5-b7fb-b63154ce9e45';
+INSERT INTO MicroServiceChains (pk, startingLink, description)
+    VALUES (@MicroServiceChain, @MicroServiceChainLink, 'Extract disk images');
+SET @ExtractDiskImagesChain = @MicroServiceChain;
+
+
+
+-- extract disk images workflow selection
+SET @TasksConfigPKReference = NULL;
+SET @TasksConfig = '514d87c1-ef54-4fb2-9d60-e06a37f053ca';
+SET @MicroServiceChainLink = '6ee4e5c8-c214-402a-9e02-851a3008a2b0';
+SET @MicroServiceChainLinksExitCodes = '9986c11a-8d46-4da9-bb83-768958caade1';
+SET @defaultNextChainLink = @NextMicroServiceChainLink;
+
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
+    VALUES
+    (@TasksConfig, '61fb3874-8ef6-49d3-8a2d-3cb66e86a30c', @TasksConfigPKReference, 'Extract files from disk images');
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+
+-- extract
+SET @MicroServiceChainChoice = '632cd6e3-d998-40eb-b1aa-3ab9d9244fdd';
+SET @chainAvailable = @ExtractDiskImagesChain;
+INSERT INTO MicroServiceChainChoice (pk, choiceAvailableAtLink, chainAvailable)
+    VALUES                
+    (@MicroServiceChainChoice, @MicroServiceChainLink, @chainAvailable);
+
+-- don't extract
+SET @MicroServiceChainChoice = 'bda72615-6963-4275-ae80-5caed16f99a2';
+SET @chainAvailable = @DoNotExtractDiskImagesChain;
+INSERT INTO MicroServiceChainChoice (pk, choiceAvailableAtLink, chainAvailable)
+    VALUES                
+    (@MicroServiceChainChoice, @MicroServiceChainLink, @chainAvailable);
+    
+-- reject
+SET @MicroServiceChainChoice = '3d1d9dd4-f1e4-4b4f-ab20-92600d0188c1';
+SET @chainAvailable = @rejectSIPMicroserviceChain;
+INSERT INTO MicroServiceChainChoice (pk, choiceAvailableAtLink, chainAvailable)
+    VALUES                
+    (@MicroServiceChainChoice, @MicroServiceChainLink, @chainAvailable);
+
+SET @WatchedDirectory = 'ae41fd41-7ec3-4318-996c-8a6581f93be1';
+SET @MicroServiceChains = '3050c636-fff4-4f0e-b43c-3243262fe023';
+set @NextMicroServiceChainLink = @MicroServiceChainLink;
+INSERT INTO MicroServiceChains (pk, startingLink, description)
+    VALUES (@MicroServiceChains, @MicroServiceChainLink, 'wd - Extract disk images');
+
+INSERT INTO WatchedDirectories (pk, watchedDirectoryPath, chain, onlyActOnDirectories, expectedType)
+    VALUES (@WatchedDirectory, '%watchDirectoryPath%workFlowDecisions/extractDiskImages/', @MicroServiceChains, True, '76e66677-40e6-41da-be15-709afb334936');
+
+-- Move to extractDiskImages
+SET @TasksConfig = '66b1e833-53b9-4556-81ea-8c880879f85f';
+SET @TasksConfigPKReference = '9d5aa57b-1db4-4f86-8ff9-a12506fae4ef';
+SET @MicroServiceChainLink = '49878766-5025-49f5-8f62-46758d148eb1';
+SET @MicroServiceChainLinksExitCodes = 'a6cfea83-c1ff-42d3-98ee-eed249bc33e1';
+SET @defaultNextChainLink = @MoveSIPToFailedLink;
+
+INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
+    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, FALSE, NULL, NULL, 'moveSIP_v0.0','\"%SIPDirectory%\" \"%sharedPath%watchedDirectories/workFlowDecisions/extractDiskImages/.\" \"%SIPUUID%\" \"%sharedPath%\"');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
+    VALUES
+    (@TasksConfig, '36b2e239-4a57-4aa5-8ebc-7a29139baca6', @TasksConfigPKReference, 'Move to extract disk images');
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, NULL);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- update x link to use next link
+UPDATE MicroServiceChainLinksExitCodes SET nextMicroServiceChainLink = @NextMicroServiceChainLink WHERE pk = '9cdd2a70-61a3-4590-8ccd-26dde4290be4';
+
+-- * / modify SIP workflow
+-- * disk image transfer workflow
+
+/*
+
+SET @TasksConfig = '';
+SET @TasksConfigPKReference = '';
+SET @MicroServiceChainLink = '';
+SET @MicroServiceChainLinksExitCodes = '';
+SET @defaultNextChainLink = @MoveSIPToFailedLink;
+
+INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
+    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImage', FALSE, NULL, NULL, 'bulkExtractor_v0.0', '"%relativeLocation%" "%date%" "%taskUUID%" "%fileUUID%" %SIPDirectory%');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
+    VALUES
+    (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'Run bulk-extractor');
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- 
+SET @TasksConfig = '';
+SET @MicroServiceChainLink = '';
+SET @MicroServiceChainLinksExitCodes = '';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+*/
+
+-- Move to completed transfers directory
+SET @TasksConfig = '39ac9ff8-d312-4033-a2c6-44219471abda';
+SET @MicroServiceChainLink = 'c501f27f-3f7f-49ba-b0c9-7313582e7b1c';
+SET @MicroServiceChainLinksExitCodes = '6d643aa5-d4f1-405b-84ea-8d9f2d81d4e4';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, NULL);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- set file permissions?
+
+-- Load labels from metadata/file_lables.csv
+SET @TasksConfig = '7beb3689-02a7-4f56-a6d1-9c9399f06842';
+SET @MicroServiceChainLink = '0aa3b971-0d56-46ca-a2fb-bf2fa2339acb';
+SET @MicroServiceChainLinksExitCodes = 'ec500026-550d-46d1-b47a-9e6d61bede66';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- Bulk extractor
+SET @TasksConfig = '2b7e31b3-1136-45b6-acbf-2b061ed9a36a';
+SET @TasksConfigPKReference = 'e6b17941-f641-4578-b298-f66570524938';
+SET @MicroServiceChainLink = '50b08fd3-ce54-4a11-914f-0b1fc84c96e6';
+SET @MicroServiceChainLinksExitCodes = '0101395d-edf8-4a17-b4ed-dcb2342d549e';
+SET @defaultNextChainLink = @NextMicroServiceChainLink;
+
+INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
+    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImage', FALSE, NULL, NULL, 'bulkExtractor_v0.0', '"%relativeLocation%" "%date%" "%taskUUID%" "%fileUUID%" %SIPDirectory%');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
+    VALUES
+    (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'Run bulk-extractor');
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+
+-- Run fiwalk
+SET @TasksConfig = '8ed61984-80cb-410f-874f-b908771f9f75';
+SET @TasksConfigPKReference = '0f004f5e-1083-4aa7-ab9f-fd347bcd4078';
+SET @MicroServiceChainLink = '158ae2e0-7c26-4339-a1b0-d5089ff82d37';
+SET @MicroServiceChainLinksExitCodes = 'ebee1dd1-bc9b-4d58-b815-3a69be33d6a4';
+SET @defaultNextChainLink = @NextMicroServiceChainLink;
+
+INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, filterFileGrpUse, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
+    VALUES (@TasksConfigPKReference, NULL, NULL, NULL, 'diskImage', FALSE, '%SIPLogsDirectory%fiwalk-%fileUUID%.xml', NULL, 'fiwalk_v0.0', '"%relativeLocation%" "%date%" "%taskUUID%" "%fileUUID%"');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
+    VALUES
+    (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'Run Fiwalk');
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- Identify files by extension
+SET @TasksConfig = '59fc6d9e-a648-443f-93f3-7f172f8e85a7';
+SET @MicroServiceChainLink = 'ce63f1cc-8108-4130-b95d-dab932bbc115';
+SET @MicroServiceChainLinksExitCodes = 'd73e864a-0e91-49e2-b70b-6571c2466b01';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- Sanitize transfer name
+SET @TasksConfig = '16eaacad-e180-4be1-a13c-35ab070808a7';
+SET @MicroServiceChainLink = '6e263976-1b43-4227-8f24-5c9ca70f9d90';
+SET @MicroServiceChainLinksExitCodes = '593a6e53-6ce2-46ee-9e85-3d0041bd99c8';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- Sanitize objects file and directory names
+SET @TasksConfig = '9dd95035-e11b-4438-a6c6-a03df302933c';
+SET @MicroServiceChainLink = 'bf49512d-d051-4ace-8422-062de4f7de50';
+SET @MicroServiceChainLinksExitCodes = '9cf78c41-20bd-4577-b224-f5d0c136d14c';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- Scan for viruses
+SET @TasksConfig = '3c002fb6-a511-461e-ad16-0d2c46649374';
+SET @MicroServiceChainLink = 'f1ce03b7-4403-4496-ba5e-e0394ce7645d';
+SET @MicroServiceChainLinksExitCodes = 'c86e8fcf-67c7-49cc-969a-b1dd3865080c';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- Generate METS.xml document
+SET @TasksConfig = '3df5643c-2556-412f-a7ac-e2df95722dae';
+SET @MicroServiceChainLink = 'f4b84724-3ec7-4150-9921-006bb76a4420';
+SET @MicroServiceChainLinksExitCodes = '4eabcad9-e8e5-422e-9531-82427a429354';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- Verify metadata directory checksums
+SET @TasksConfig = '57ef1f9f-3a1a-4cdc-90fd-39b024524618';
+SET @MicroServiceChainLink = '28e63f80-a143-4db1-a8e1-504b75db6c8b';
+SET @MicroServiceChainLinksExitCodes = '842b7c97-6c0a-4987-a3a0-1b72a23dbf6a';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- Assign checksums and file sizes to objects
+SET @TasksConfig = 'bd9769ba-4182-4dd4-ba85-cff24ea8733e';
+SET @MicroServiceChainLink = '0514a552-0f86-42b9-9a5a-eada9aa6e11d';
+SET @MicroServiceChainLinksExitCodes = '05a8ee6b-9b5a-4427-aa75-865fc63dd5a1';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+
+-- Assign file UUIDS
+SET @TasksConfig = 'bdbd84a4-958c-410f-96ad-fd021a161422';
+SET @TasksConfigPKReference = 'd6f1df74-42dc-41c6-9e3e-a809831a76e1';
+SET @MicroServiceChainLink = '0026dce7-38e4-4244-8425-97519c6a7183';
+SET @MicroServiceChainLinksExitCodes = '9221c057-9da3-4dcf-bf3b-57e3948f8f1a';
+SET @defaultNextChainLink = @MoveSIPToFailedLink;
+
+INSERT INTO StandardTasksConfigs (pk, filterFileEnd, filterFileStart, filterSubDir, requiresOutputLock, standardOutputFile, standardErrorFile, execute, arguments)
+    VALUES (@TasksConfigPKReference, NULL, NULL, 'objects', FALSE, NULL, NULL, 'diskImageAsssignFileUUIDs_v0.0', '--transferUUID "%SIPUUID%" --sipDirectory "%SIPDirectory%" --filePath "%relativeLocation%" --fileUUID "%fileUUID%" --eventIdentifierUUID "%taskUUID%" --date "%date%"');
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
+    VALUES
+    (@TasksConfig, 'a6b1c323-7d36-428e-846a-e7e819423577', @TasksConfigPKReference, 'Assign file UUIDs');
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- Set file permissions
+SET @TasksConfig = 'ad38cdea-d1da-4d06-a7e5-6f75da85a718';
+SET @MicroServiceChainLink = '11d40223-7d2d-4263-9f73-60b535f5a201';
+SET @MicroServiceChainLinksExitCodes = '072970cc-541c-4ee6-b316-1305a4d8b220';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- Include default Transfer proceeingMCP.xml
+SET @TasksConfig = 'a73b3690-ac75-4030-bb03-0c07576b649b';
+SET @MicroServiceChainLink = 'deb15c39-270a-484d-b60d-015d74a7ef3f';
+SET @MicroServiceChainLinksExitCodes = '3825f689-b6e4-410c-b8d5-705edfbfd1c2';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- Rename With Transfer UUID
+SET @TasksConfig = '4b07d97a-04c1-45ce-9d9b-36bc29054223';
+SET @MicroServiceChainLink = '2962c661-26d8-449b-bee9-156df6bb6daf';
+SET @MicroServiceChainLinksExitCodes = '9a378890-b287-4931-ad67-f329abd01b6d';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- Verify mets_structmap.xml compliance
+SET @TasksConfig = '757b5f8b-0fdf-4c5c-9cff-569d63a2d209';
+SET @MicroServiceChainLink = 'f5380d1a-8955-415d-96cc-3b0e4fd8c98f';
+SET @MicroServiceChainLinksExitCodes = 'db3ef857-985a-482f-a17e-6739b724ca73';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- Restructure for compliance
+SET @TasksConfig = 'dde8c13d-330e-458b-9d53-0937370695fa';
+SET @MicroServiceChainLink = '2442beed-72a3-49c2-82c6-6804933fff1d';
+SET @MicroServiceChainLinksExitCodes = 'd696e5d8-53ce-4385-affb-5572f6c986de';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+-- move to processing directory
+SET @TasksConfig = @TasksConfigMoveTransferToProcessingDirectory;
+SET @MicroServiceChainLink = '03423984-d2ff-447e-a106-b8f5898597d2';
+SET @MicroServiceChainLinksExitCodes = 'ee936f58-4d54-4229-8e60-3fced6692053';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+
+-- SET Permissions --
+SET @TasksConfig = 'ad38cdea-d1da-4d06-a7e5-6f75da85a718';
+SET @MicroServiceChainLink = 'cad1cddc-7157-43c6-94e0-c4d5e360671e';
+SET @MicroServiceChainLinksExitCodes = '41dbc31c-e0ed-4629-adf4-ae46906836bb';
+SET @defaultNextChainLink = @MoveTransferToFailedLink;
+SET @MicroServiceChain = '907aef5f-1f61-4cff-95ca-97ab6f4f5551';
+
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+INSERT INTO MicroServiceChainLinksExitCodes (pk, microServiceChainLink, exitCode, nextMicroServiceChainLink)
+    VALUES (@MicroServiceChainLinksExitCodes, @MicroServiceChainLink, 0, @NextMicroServiceChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+INSERT INTO MicroServiceChains (pk, startingLink, description)
+    VALUES (@MicroServiceChain, @MicroServiceChainLink, 'Approve transfer');
+
+
+-- approve transfer --
+SET @TasksConfigPKReference = NULL;
+SET @TasksConfig = '622909a0-d3a3-4cc7-a78e-7031d45b80a4';
+SET @MicroServiceChainLink = '02dab5d2-c481-43a7-8bb1-d98e25d72f63';
+SET @MicroServiceChainLinksExitCodes = '27abe86d-8afb-4146-bdc9-d60bb7d6c09b';
+SET @defaultNextChainLink = @NextMicroServiceChainLink;
+SET @MicroServiceChainChoice1 = '6be0dada-e40d-4444-9d67-e414493304fb';
+SET @MicroServiceChainChoice2 = 'b9de6368-191d-42cd-ac1a-befa63f20edf';
+
+
+INSERT INTO TasksConfigs (pk, taskType, taskTypePKReference, description)
+    VALUES
+    (@TasksConfig, '61fb3874-8ef6-49d3-8a2d-3cb66e86a30c', @TasksConfigPKReference, 'Approve disk image transfer');
+INSERT INTO MicroServiceChainLinks (pk, microserviceGroup, currentTask, defaultNextChainLink)
+    VALUES (@MicroServiceChainLink, @microserviceGroup, @TasksConfig, @defaultNextChainLink);
+SET @NextMicroServiceChainLink = @MicroServiceChainLink;
+
+INSERT INTO MicroServiceChainChoice (pk, choiceAvailableAtLink, chainAvailable)
+    VALUES (@MicroServiceChainChoice1, @MicroServiceChainLink, @MicroServiceChain);
+INSERT INTO MicroServiceChainChoice (pk, choiceAvailableAtLink, chainAvailable)
+    VALUES (@MicroServiceChainChoice2, @MicroServiceChainLink, @rejectTransferMicroserviceChain);
+    
+SET @MicroServiceChain = '44f0867f-f1db-4592-b6d5-fe75a881b58d';
+INSERT INTO MicroServiceChains (pk, startingLink, description)
+    VALUES (@MicroServiceChain, @MicroServiceChainLink, 'diskImage-wdChain');
+
+-- create watched directory --
+SET @WatchedDirectory = '4fddfc73-02c1-4f9d-acab-2a7a4d8d2c4d';
+INSERT INTO WatchedDirectories (pk, watchedDirectoryPath, chain, onlyActOnDirectories, expectedType)
+    VALUES (@WatchedDirectory, '%watchDirectoryPath%activeTransfers/diskImage/', @MicroServiceChain, 1, 'f9a3a93b-f184-4048-8072-115ffac06b5d');
+
+
+-- </dev/issue-5037> 
+
+-- Issue 5356
+CREATE TABLE TransferMetadataSets (
+  pk VARCHAR(50) NOT NULL,
+  createdTime TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (pk)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+ALTER TABLE Transfers ADD COLUMN transferMetadataSetRowUUID VARCHAR(50);
+-- /Issue 5356
