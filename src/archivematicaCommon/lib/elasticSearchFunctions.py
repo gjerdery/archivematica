@@ -156,7 +156,10 @@ def set_up_mapping(conn, index):
         }
 
         print 'Creating AIP file mapping...'
-        conn.put_mapping(doc_type='aipfile', mapping={'aipfile': {'date_detection': False, 'properties': mapping}}, indices=['aips'])
+        parent = {
+            'type': 'dmdsec'
+        }
+        conn.put_mapping(doc_type='aipfile', mapping={'aipfile': {'date_detection': False, 'properties': mapping, '_parent': parent}}, indices=['aips'])
         print 'AIP file mapping created.'
 
 def connect_and_index_aip(uuid, name, filePath, pathToMETS):
@@ -212,6 +215,21 @@ def connect_and_index_files(index, type, uuid, pathToArchive, sipName=None):
 
             # index AIP
             if os.path.isfile(metsFilePath):
+                # get dmdsec XML to parse so we can index the dmdSec data and use it as a parent document
+                tree = ElementTree.parse(metsFilePath)
+                root = tree.getroot()
+
+                # get SIP-wide dmdSec and index it so we can use it as a parent document
+                dmdSec = root.findall("{http://www.loc.gov/METS/}dmdSec/{http://www.loc.gov/METS/}mdWrap/{http://www.loc.gov/METS/}xmlData")
+
+                # there should only be one
+                for item in dmdSec:
+                    print "ZZZZZZZZZZZZZZZ"
+                    xml = ElementTree.tostring(item)
+                    dmdSecData = xmltodict.parse(xml)
+                    result = conn.index(dmdSecData, 'aips', 'dmdsec')
+                    dmdsec_id = result['_id']
+
                 filesIndexed = index_mets_file_metadata(
                     conn,
                     uuid,
@@ -219,6 +237,7 @@ def connect_and_index_files(index, type, uuid, pathToArchive, sipName=None):
                     index,
                     type,
                     sipName,
+                    dmdsec_id,
                     backup_to_mysql
                 )
 
@@ -244,7 +263,7 @@ def connect_and_index_files(index, type, uuid, pathToArchive, sipName=None):
 
     return exitCode
 
-def index_mets_file_metadata(conn, uuid, metsFilePath, index, type, sipName, backup_to_mysql = False):
+def index_mets_file_metadata(conn, uuid, metsFilePath, index, type, sipName, dmdsec_id, backup_to_mysql = False):
     filesIndexed     = 0
     filePathAmdIDs   = {}
     filePathMetsData = {}
@@ -305,7 +324,7 @@ def index_mets_file_metadata(conn, uuid, metsFilePath, index, type, sipName, bac
                 indexData['METS']['amdSec'] = rename_dict_keys_with_child_dicts(normalize_dict_values(xmltodict.parse(xml)))
 
                 # index data
-                result = conn.index(indexData, index, type)
+                result = conn.index(indexData, index, type, parent=dmdsec_id)
 
                 if backup_to_mysql:
                     backup_indexed_document(result, indexData, index, type)
