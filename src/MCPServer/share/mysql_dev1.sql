@@ -1534,7 +1534,6 @@ INSERT INTO WatchedDirectories (pk, watchedDirectoryPath, chain, onlyActOnDirect
 CREATE TABLE TransferMetadataSets (
   pk VARCHAR(50) NOT NULL,
   createdTime TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  createdByUserID INT(11) NOT NULL,
   transferType VARCHAR(50) NOT NULL,
   PRIMARY KEY (pk)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
