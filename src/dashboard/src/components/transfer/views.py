@@ -44,6 +44,13 @@ def grid(request):
     hide_features = helpers.hidden_features()
     return render(request, 'transfer/grid.html', locals())
 
+def component(request, uuid):
+    path = request.GET.get('path', '')
+    set = models.TransferMetadataSet.objects.get(pk=uuid)
+
+    # present fields for editing
+    return HttpResponse(set.pk)
+
 def browser(request):
     originals_directory = '/var/archivematica/sharedDirectory/transferBackups/originals'
     arrange_directory = '/var/archivematica/sharedDirectory/transferBackups/arrange'

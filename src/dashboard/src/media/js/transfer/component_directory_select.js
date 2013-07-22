@@ -107,7 +107,9 @@ function createDirectoryPicker(baseDirectory, modalCssId, targetCssId) {
       if ($('#transfer-type').val() == 'disk image') {
         $transferPathEditEl = $('<span style="margin-left: 1em;"><img src="/media/images/table_edit.png" /></span>');
         $transferPathEditEl.click(function() {
-          alert('Edit ' + result.path);
+          var path = $(this).parent().children('.transfer_path').text(),
+              component_metadata_url = '/transfer/component/' + transferMetadataSetRowUUID + '/?path=' + encodeURIComponent(path);
+          window.open(component_metadata_url, '_blank');
         });
         $transferPathRowEl.append($transferPathEditEl);
       }
