@@ -510,6 +510,7 @@ class TransferMetadataSet(models.Model):
     id = UUIDPkField()
     transfer_type = models.TextField(db_column='transferType')
     createdtime = models.DateTimeField(db_column='createdTime', auto_now_add=True)
+    createdbyuserid = models.IntegerField(db_column='createdByUserID')
 
     class Meta:
         db_table = u'TransferMetadataSets'
