@@ -508,6 +508,7 @@ class TaskConfig(models.Model):
 
 class TransferMetadataSet(models.Model):
     id = UUIDPkField()
+    transfer_type = models.TextField(db_column='transferType')
     createdtime = models.DateTimeField(db_column='createdTime', auto_now_add=True)
 
     class Meta:

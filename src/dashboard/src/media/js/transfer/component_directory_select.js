@@ -75,8 +75,9 @@ function createDirectoryPicker(baseDirectory, modalCssId, targetCssId) {
       // If a transfer metadata set hasn't been created, create one via a 
       // synchronous AJAX request.
       if (transferMetadataSetRowUUID == false) {
+        var transferTypeNormalized = $('#transfer-type').val().replace(' ', '_');
         $.ajax({
-          'url': '/filesystem/get_transfer_metadata_set/',
+          'url': '/filesystem/get_transfer_metadata_set/' + transferTypeNormalized + '/',
           'type': 'GET',
           'async': false,
           'cache': false,
