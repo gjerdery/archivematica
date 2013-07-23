@@ -53,9 +53,32 @@ def component(request, uuid):
     # get set/field data and initialize dict of form field values
     set    = models.TransferMetadataSet.objects.get(pk=uuid)
     fields = models.TransferMetadataField.objects.all().order_by('sortorder')
-    values = {}
+    values = {}  # field values
+    options = [] # field options (for value selection)
 
     for field in fields:
+        if field.optiontaxonomyuuid != '' and field.optiontaxonomyuuid != None:
+            # check for newly added terms
+            new_term = request.POST.get('add_to_' + field.pk, '')
+            if new_term != '':
+                term = models.TaxonomyTerm()
+                term.taxonomyuuid = field.optiontaxonomyuuid
+                term.term = new_term
+                term.save()
+
+            # load taxonomy terms into option values
+            optionvalues = ['']
+            for term in models.TaxonomyTerm.objects.filter(taxonomyuuid=field.optiontaxonomyuuid):
+                optionvalues.append(term.term)
+            options.append({
+              'field':   field.pk,
+              'options': optionvalues
+            })
+
+            # determine whether field should allow new terms to be specified
+            field.allownewvalue = True
+            # support allownewvalue
+            # by loading taxonomy and checked if it's open
         try:
             field_value = models.TransferMetadataFieldValue.objects.get(
                 fielduuid=field.pk,
