@@ -39,7 +39,8 @@ var TransferComponentFormView = Backbone.View.extend({
     createDirectoryPicker(
       sourceDir,
       'transfer-component-select-modal',
-      'path_container'
+      'path_container',
+      'transfer-component-path-item'
     );
   },
 
