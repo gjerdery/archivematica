@@ -1474,4 +1474,19 @@ CREATE TABLE TransferMetadataFieldValues (
   fieldValue LONGTEXT DEFAULT '',
   PRIMARY KEY (pk)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE Taxonomies (
+  pk varchar(50) NOT NULL,
+  createdTime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  name varchar(255) DEFAULT '',
+  PRIMARY KEY (pk)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE TaxonomyTerms (
+  pk varchar(50) NOT NULL,
+  createdTime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  taxonomyUUID varchar(50) NOT NULL,
+  term varchar(255) DEFAULT '',
+  PRIMARY KEY (pk)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 -- /Issue 5356
