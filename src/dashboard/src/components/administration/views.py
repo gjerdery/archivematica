@@ -29,6 +29,7 @@ from components.administration.forms import AdministrationForm
 from components.administration.forms import AgentForm
 from components.administration.forms import ToggleSettingsForm
 from components.administration.forms import TaxonomyTermForm
+from django.template import RequestContext
 import components.decorators as decorators
 import components.helpers as helpers
 from components.helpers import hidden_features
@@ -307,6 +308,20 @@ def term_detail(request, term_uuid):
         form = TaxonomyTermForm(instance=term)
 
     return render(request, 'administration/term_detail.html', locals())
+
+def term_delete_context(request, term_uuid):
+    term = models.TaxonomyTerm.objects.get(pk=term_uuid)
+    prompt = 'Delete term ' + term.term + '?'
+    cancel_url = reverse("components.administration.views.term_detail", args=[term_uuid])
+    return RequestContext(request, {'action': 'Delete', 'prompt': prompt, 'cancel_url': cancel_url})
+
+@decorators.confirm_required('simple_confirm.html', term_delete_context)
+def term_delete(request, term_uuid):
+    if request.method == 'POST':
+        pass # do delete
+        term = models.TaxonomyTerm.objects.get(pk=term_uuid)
+        term.delete()
+        return HttpResponseRedirect(reverse('components.administration.views.terms', args=[term.taxonomyuuid]))
 
 def general(request):
     toggleableSettings = [
