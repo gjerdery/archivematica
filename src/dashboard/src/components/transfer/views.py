@@ -45,6 +45,9 @@ def grid(request):
     return render(request, 'transfer/grid.html', locals())
 
 def component(request, uuid):
+    messages = []
+    fields_saved = False
+
     if request.method == 'GET':
         path = request.GET.get('path', '')
     else:
@@ -65,14 +68,17 @@ def component(request, uuid):
                 term.taxonomyuuid = field.optiontaxonomyuuid
                 term.term = new_term
                 term.save()
+                messages.append({
+                    'text': 'Term added.'
+                })
 
             # load taxonomy terms into option values
             optionvalues = ['']
             for term in models.TaxonomyTerm.objects.filter(taxonomyuuid=field.optiontaxonomyuuid):
                 optionvalues.append(term.term)
             options.append({
-              'field':   field.pk,
-              'options': optionvalues
+                'field':   field.pk,
+                'options': optionvalues
             })
 
             # determine whether field should allow new terms to be specified
@@ -97,7 +103,13 @@ def component(request, uuid):
         if request.method == 'POST':
             field_value.fieldvalue = request.POST.get(field.fieldname, '')
             field_value.save()
+            fields_saved = True
             values[(field.fieldname)] = field_value.fieldvalue # override initially loaded value, if any
+
+    if fields_saved:
+        messages.append({
+            'text': 'Metadata saved.'
+        })
 
     return render(request, 'transfer/component.html', locals())
 
