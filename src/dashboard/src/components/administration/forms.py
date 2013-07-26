@@ -50,3 +50,11 @@ class ToggleSettingsForm(forms.Form):
                 initial=checked,
                 widget=CheckboxInput()
             )
+
+class TaxonomyTermForm(ModelForm):
+    taxonomyuuid = forms.CharField(required=True, widget=TextInput(attrs=settings.INPUT_ATTRS))
+    term = forms.CharField(required=True, widget=TextInput(attrs=settings.INPUT_ATTRS))
+
+    class Meta:
+        model = models.TaxonomyTerm
+        exclude = ('identifiertype')
