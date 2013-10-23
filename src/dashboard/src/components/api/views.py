@@ -228,3 +228,16 @@ def approve_transfer_via_mcp(directory, type, user_id):
         error = 'Please specify a transfer directory.'
 
     return error
+
+def create_transfer(request):
+    if request.method == 'POST':
+        # process creation request, if criteria met
+        if request.body != '':
+            # return HTTP 201, created
+            return HttpResponse(status=201)
+        else:
+            # return HTTP 400, bad request
+            return HttpResponse(status=400)
+
+    # return HTTP 405, method not allowed
+    return HttpResponse(status=405)
