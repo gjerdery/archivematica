@@ -234,7 +234,9 @@ def create_transfer(request):
         # process creation request, if criteria met
         if request.body != '':
             # return HTTP 201, created
-            return HttpResponse(status=201)
+            response = HttpResponse(status=201)
+            response['Location'] = 'someUUID'
+            return response
         else:
             # return HTTP 400, bad request
             return HttpResponse(status=400)
