@@ -308,11 +308,13 @@ def create_or_list_transfers(request):
     elif request.method == 'POST':
         # is the transfer ready to move to a processing directory?
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
-            return HttpResponse(str(request.META))
-            # fetch transfer using ID
-            #transfer = models.Transfer.objects.get(uuid=)
-            #shutil.move(transfer.currentlocation, standard_transfers_directory)
-            return HttpResponse('YAGHHH')
+            # TODO: start a background job to wait until all related jobs are done then move the
+            # transfer files into the appropriate watch directory
+            #
+            #   fetch transfer using ID
+            #   transfer = models.Transfer.objects.get(uuid=)
+            #   shutil.move(transfer.currentlocation, standard_transfers_directory)
+            return HttpResponse('')
         else:
             # process creation request, if criteria met
             if request.body != '':
@@ -320,6 +322,7 @@ def create_or_list_transfers(request):
                 if 'HTTP_ON_BEHALF_OF' in request.META:
                     transfer_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
                 transfer_uuid = _create_transfer_directory_and_db_entry(transfer_specification)
+                # TODO: parse XML and start fetching jobs if needed
                 if transfer_uuid != None:
                     receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
                     response = HttpResponse(receipt_xml, mimetype='text/xml', status=201)
