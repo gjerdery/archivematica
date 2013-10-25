@@ -177,6 +177,7 @@ class TransferManager(models.Manager):
 class Transfer(models.Model):
     uuid = models.CharField(max_length=36, primary_key=True, db_column='transferUUID')
     currentlocation = models.TextField(db_column='currentLocation')
+    sourceofacquisition = models.TextField(db_column='sourceOfAcquisition')
     type = models.CharField(max_length=50, primary_key=True, db_column='type')
     accessionid = models.TextField(db_column='accessionID')
     # ...

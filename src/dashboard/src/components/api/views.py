@@ -17,6 +17,7 @@
 
 import os
 import json
+import shutil
 import uuid
 from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseServerError
 from django.db.models import Q
@@ -236,7 +237,7 @@ def _transfer_storage_path(uuid=None):
 
     storage_path = os.path.join(
         shared_directory_path,
-        'www/AIPsStore/transferBacklog/arrange'
+        'www/AIPsStore/transferBacklog/originals'
     )
 
     if uuid == None:
@@ -244,7 +245,7 @@ def _transfer_storage_path(uuid=None):
     else:
         return os.path.join(storage_path, uuid)
 
-def _create_transfer_directory_and_db_entry():
+def _create_transfer_directory_and_db_entry(transfer_specification):
     transfer_uuid = uuid.uuid4().__str__()
 
     transfer_path = os.path.join(
@@ -259,6 +260,9 @@ def _create_transfer_directory_and_db_entry():
             uuid=transfer_uuid,
             currentlocation=transfer_path
         )
+
+        if 'sourceofacquisition' in transfer_specification:
+            transfer.sourceofacquisition = transfer_specification['sourceofacquisition']
 
         transfer.save()
         return transfer_uuid
@@ -281,23 +285,47 @@ def _write_file_from_request_body(request, file_path):
     new_file.close()
     return bytes_written
 
+"""
+Example GET of transfers list:
+
+  curl -v http://127.0.0.1/api/v2/transfer/
+
+Example POST creation of transfer:
+
+  curl -v -d "some METS XML" --request POST http://localhost/api/v2/transfer/
+
+Example POST finalization of transfer:
+
+  curl -v -H "In-Progress: false" --request POST http://localhost/api/v2/transfer/
+"""
 # TODO: add authentication
 def create_or_list_transfers(request):
     if request.method == 'GET':
         # return list of transfers
         return helpers.json_response(_transfer_list())
     elif request.method == 'POST':
-        # process creation request, if criteria met
-        if request.body != '':
-            transfer_uuid = _create_transfer_directory_and_db_entry()
-            if transfer_uuid != None:
-                response = HttpResponse(mimetype='application/json', status=201)
-                response['Location'] = transfer_uuid
-                return response # Created
-            else:
-                return HttpResponse(status=500) # Server error
+        # is the transfer ready to move to a processing directory?
+        if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
+            return HttpResponse(str(request.META))
+            # fetch transfer using ID
+            #transfer = models.Transfer.objects.get(uuid=)
+            #shutil.move(transfer.currentlocation, standard_transfers_directory)
+            return HttpResponse('YAGHHH')
         else:
-            return HttpResponse(status=400) # Bad request
+            # process creation request, if criteria met
+            if request.body != '':
+                transfer_specification = {}
+                if 'HTTP_ON_BEHALF_OF' in request.META:
+                    transfer_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
+                transfer_uuid = _create_transfer_directory_and_db_entry(transfer_specification)
+                if transfer_uuid != None:
+                    response = HttpResponse(mimetype='application/json', status=201)
+                    response['Location'] = transfer_uuid
+                    return response # Created
+                else:
+                    return HttpResponse(status=500) # Server error
+            else:
+                return HttpResponse(status=400) # Bad request
     else:
         return HttpResponse(status=405) # Method not allowed
 
@@ -317,7 +345,6 @@ def transfer(request, uuid):
         return HttpResponse(status=405)
 
 """
-
 Example GET of files list:
 
   curl -v http://127.0.0.1/api/v2/transfer/03ce11a5-32c1-445a-83ac-400008894f78/media/
