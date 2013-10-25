@@ -21,6 +21,7 @@ import shutil
 import uuid
 from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseServerError
 from django.db.models import Q
+from django.template.loader import render_to_string
 from tastypie.authentication import ApiKeyAuthentication
 from contrib.mcp.client import MCPClient
 from main import models
@@ -299,6 +300,7 @@ Example POST finalization of transfer:
   curl -v -H "In-Progress: false" --request POST http://localhost/api/v2/transfer/
 """
 # TODO: add authentication
+# TODO: error is transfer completed, but has no files?
 def create_or_list_transfers(request):
     if request.method == 'GET':
         # return list of transfers
@@ -319,7 +321,8 @@ def create_or_list_transfers(request):
                     transfer_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
                 transfer_uuid = _create_transfer_directory_and_db_entry(transfer_specification)
                 if transfer_uuid != None:
-                    response = HttpResponse(mimetype='application/json', status=201)
+                    receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
+                    response = HttpResponse(receipt_xml, mimetype='text/xml', status=201)
                     response['Location'] = transfer_uuid
                     return response # Created
                 else:
@@ -359,6 +362,8 @@ Example DELETE of file:
   curl -v -XDELETE \
     "http://localhost/api/v2/transfer/03ce11a5-32c1-445a-83ac-400008894f78/media/?filename=thing.jpg"
 """
+# TODO: implement Content-MD5 header so we can verify file upload was successful
+# TODO: replace use of "filename" params with Content-Disposition for POST, example: Content-Disposition: attachment; filename=[filename]
 # TODO: add authentication
 def transfer_files(request, uuid):
     if request.method == 'GET':
