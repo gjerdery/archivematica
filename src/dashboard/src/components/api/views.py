@@ -281,6 +281,7 @@ def _write_file_from_request_body(request, file_path):
     new_file.close()
     return bytes_written
 
+# TODO: add authentication
 def create_or_list_transfers(request):
     if request.method == 'GET':
         # return list of transfers
@@ -300,6 +301,7 @@ def create_or_list_transfers(request):
     else:
         return HttpResponse(status=405) # Method not allowed
 
+# TODO: add authentication
 def transfer(request, uuid):
     if request.method == 'GET':
         # details about a transfer
@@ -316,11 +318,21 @@ def transfer(request, uuid):
 
 """
 
+Example GET of files list:
+
+  curl -v http://127.0.0.1/api/v2/transfer/03ce11a5-32c1-445a-83ac-400008894f78/media/
+
 Example POST of file:
 
   curl -v -d "filename=thing.jpg" --request POST --data-binary "@joke.jpg" \
     http://localhost/api/v2/transfer/03ce11a5-32c1-445a-83ac-400008894f78/media/
+
+Example DELETE of file:
+
+  curl -v -XDELETE \
+    "http://localhost/api/v2/transfer/03ce11a5-32c1-445a-83ac-400008894f78/media/?filename=thing.jpg"
 """
+# TODO: add authentication
 def transfer_files(request, uuid):
     if request.method == 'GET':
         transfer_path = _transfer_storage_path(uuid)
@@ -339,8 +351,7 @@ def transfer_files(request, uuid):
         else:
             return HttpResponse(status=400) # Bad request
     elif request.method == 'DELETE':
-        # NOT WORKING CURRENTLY
-        filename = request.DELETE.get('filename')
+        filename = request.GET.get('filename', '')
         if filename != '':
             transfer_path = _transfer_storage_path(uuid)
             file_path = os.path.join(transfer_path, filename) 
@@ -354,6 +365,7 @@ def transfer_files(request, uuid):
     else:
         return HttpResponse(status=405) # Method not allowed
 
+# TODO: add authentication
 def transfer_state(request, uuid):
     if request.method == 'GET':
         # details about a transfer's state
