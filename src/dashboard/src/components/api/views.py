@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Archivematica.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, json
+import os
+import json
+import uuid
 from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseServerError
 from django.db.models import Q
 from tastypie.authentication import ApiKeyAuthentication
@@ -229,17 +231,133 @@ def approve_transfer_via_mcp(directory, type, user_id):
 
     return error
 
-def create_transfer(request):
-    if request.method == 'POST':
+def _transfer_storage_path(uuid=None):
+    shared_directory_path = helpers.get_server_config_value('sharedDirectory')
+
+    storage_path = os.path.join(
+        shared_directory_path,
+        'www/AIPsStore/transferBacklog/arrange'
+    )
+
+    if uuid == None:
+        return storage_path
+    else:
+        return os.path.join(storage_path, uuid)
+
+def _create_transfer_directory_and_db_entry():
+    transfer_uuid = uuid.uuid4().__str__()
+
+    transfer_path = os.path.join(
+        _transfer_storage_path(),
+        transfer_uuid
+    )
+
+    os.mkdir(transfer_path)
+
+    if os.path.exists(transfer_path):
+        transfer = models.Transfer.objects.create(
+            uuid=transfer_uuid,
+            currentlocation=transfer_path
+        )
+
+        transfer.save()
+        return transfer_uuid
+
+def _transfer_list():
+    transfer_list = []
+    transfers = models.Transfer.objects.filter(currentlocation__startswith=_transfer_storage_path())
+    for transfer in transfers:
+        transfer_list.append(transfer.uuid)
+    return transfer_list
+
+def _write_file_from_request_body(request, file_path):
+    bytes_written = 0
+    new_file = open(file_path, 'ab')
+    chunk = request.read()
+    if chunk != None:
+        new_file.write(chunk)
+        bytes_written += len(chunk)
+        chunk = request.read()
+    new_file.close()
+    return bytes_written
+
+def create_or_list_transfers(request):
+    if request.method == 'GET':
+        # return list of transfers
+        return helpers.json_response(_transfer_list())
+    elif request.method == 'POST':
         # process creation request, if criteria met
         if request.body != '':
-            # return HTTP 201, created
-            response = HttpResponse(status=201)
-            response['Location'] = 'someUUID'
-            return response
+            transfer_uuid = _create_transfer_directory_and_db_entry()
+            if transfer_uuid != None:
+                response = HttpResponse(mimetype='application/json', status=201)
+                response['Location'] = transfer_uuid
+                return response # Created
+            else:
+                return HttpResponse(status=500) # Server error
         else:
-            # return HTTP 400, bad request
-            return HttpResponse(status=400)
+            return HttpResponse(status=400) # Bad request
+    else:
+        return HttpResponse(status=405) # Method not allowed
 
-    # return HTTP 405, method not allowed
-    return HttpResponse(status=405)
+def transfer(request, uuid):
+    if request.method == 'GET':
+        # details about a transfer
+        return HttpResponse('')
+    elif request.method == 'PUT':
+        # update transfer and return details
+        return HttpResponse('')
+    elif request.method == 'DELETE':
+        # delete transfer
+        return HttpResponse('')
+    else:
+        # return HTTP 405, method not allowed
+        return HttpResponse(status=405)
+
+"""
+
+Example POST of file:
+
+  curl -v -d "filename=thing.jpg" --request POST --data-binary "@joke.jpg" \
+    http://localhost/api/v2/transfer/03ce11a5-32c1-445a-83ac-400008894f78/media/
+"""
+def transfer_files(request, uuid):
+    if request.method == 'GET':
+        transfer_path = _transfer_storage_path(uuid)
+        if os.path.exists(transfer_path):
+            return helpers.json_response(os.listdir(transfer_path))
+        else:
+            return HttpResponse(status=404) # Not found
+    elif request.method == 'POST':
+        # add a file to the transfer
+        # file is in body
+        filename = request.POST.get('filename')
+        if filename != '':
+            file_path = os.path.join(_transfer_storage_path(uuid), filename)
+            bytes_written = _write_file_from_request_body(request, file_path)
+            return HttpResponse('Wrote ' + str(bytes_written))
+        else:
+            return HttpResponse(status=400) # Bad request
+    elif request.method == 'DELETE':
+        # NOT WORKING CURRENTLY
+        filename = request.DELETE.get('filename')
+        if filename != '':
+            transfer_path = _transfer_storage_path(uuid)
+            file_path = os.path.join(transfer_path, filename) 
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                return HttpResponse('Deleted.')
+            else:
+                return HttpResponse(status=404) # Not found
+        else:
+            return HttpResponse(status=400) # Bad request
+    else:
+        return HttpResponse(status=405) # Method not allowed
+
+def transfer_state(request, uuid):
+    if request.method == 'GET':
+        # details about a transfer's state
+        return HttpResponse('')
+    else:
+        # return HTTP 405, method not allowed
+        return HttpResponse(status=405)
