@@ -32,6 +32,11 @@ def main(file_path, file_uuid):
         return
 
     rules = FPRule.active.filter(format=format.uuid, purpose='characterization')
+    # Characterization always occurs - if nothing is specified, get one or more defaults
+    # specified in the FPR.
+    if not rules:
+        rules = FPRule.active.filter(purpose='default_characterization')
+
     for rule in rules:
         if rule.command.script_type == 'bashScript' or rule.command.script_type == 'command':
             args = []
