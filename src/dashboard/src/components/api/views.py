@@ -15,9 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Archivematica.  If not, see <http://www.gnu.org/licenses/>.
 
+import cPickle
+import datetime
 import os
+import gearman
 import json
 import shutil
+import tempfile
 import uuid
 from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseServerError
 from django.db.models import Q
@@ -322,7 +326,26 @@ def create_or_list_transfers(request):
                 if 'HTTP_ON_BEHALF_OF' in request.META:
                     transfer_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
                 transfer_uuid = _create_transfer_directory_and_db_entry(transfer_specification)
+
                 # TODO: parse XML and start fetching jobs if needed
+                mock_object_content_urls = [
+                  'http://127.0.0.1:8080/fedora/objects/people:rick/datastreams/rick_pic/content'
+                ]
+
+                # write resources to temp file
+                temp_dir = tempfile.mkdtemp()
+                resource_list_filename = os.path.join(temp_dir, 'resource_list.txt')
+                with open(resource_list_filename, 'w') as resource_list_file:
+                    for url in mock_object_content_urls:
+                        resource_list_file.write(url + "\n")
+
+                return HttpResponse(resource_list_filename + ' ' + _transfer_storage_path(transfer_uuid))
+                # submit download job
+                gm_client = gearman.GearmanClient(['localhost:4730'])
+                data = {'createdDate' : datetime.datetime.now().__str__()}
+                data['arguments'] = resource_list_filename + ' "' + _transfer_storage_path(transfer_uuid) + '"'
+                result = gm_client.submit_job('fetchFedoraCommonsObjectContent_v0.0', cPickle.dumps(data), '1145')
+
                 if transfer_uuid != None:
                     receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
                     response = HttpResponse(receipt_xml, mimetype='text/xml', status=201)
