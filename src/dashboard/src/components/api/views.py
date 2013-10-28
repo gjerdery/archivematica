@@ -341,10 +341,11 @@ def create_or_list_transfers(request):
 
                 return HttpResponse(resource_list_filename + ' ' + _transfer_storage_path(transfer_uuid))
                 # submit download job
+                # TODO: create task record so progress can be tracked
                 gm_client = gearman.GearmanClient(['localhost:4730'])
                 data = {'createdDate' : datetime.datetime.now().__str__()}
                 data['arguments'] = resource_list_filename + ' "' + _transfer_storage_path(transfer_uuid) + '"'
-                result = gm_client.submit_job('fetchFedoraCommonsObjectContent_v0.0', cPickle.dumps(data), '1145')
+                result = gm_client.submit_job('fetchfedoracommonsobjectcontent_v0.0', cPickle.dumps(data), '1145')
 
                 if transfer_uuid != None:
                     receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
