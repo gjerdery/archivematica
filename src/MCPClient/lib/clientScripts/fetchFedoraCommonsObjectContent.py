@@ -28,12 +28,21 @@ import urllib2
 import tempfile
 
 def download_resources_listed_in_file(file_containing_urls, destination_directory):
+    append('Starting resource download')
     download_counter = 1
     temp_dir = tempfile.mkdtemp()
 
+    append('Temp dir created')
     # download each resource in file containing URLs
-    urls = open(file_containing_urls, 'r')
+    append(file_containing_urls)
+    try:
+        urls = open(file_containing_urls)
+    except:
+        append('Error opening file containing URLs')
+
+    append('File opened')
     for url in urls:
+        append('Downloading url: ' + url)
         # down resource to a temporary file
         temp_filepath = os.path.join(temp_dir, str(download_counter))
         response = download_resource(url, temp_filepath)
@@ -44,6 +53,7 @@ def download_resources_listed_in_file(file_containing_urls, destination_director
         download_counter += 1
     urls.close()
 
+    append('Done downloading')
     # cleanup
     os.rmdir(temp_dir)
 
@@ -65,7 +75,15 @@ def download_resource(url, filepath):
             fp.write(chunk)
     return request
 
+def append(message):
+    with open("/tmp/downloader.txt", "a") as myfile:
+        myfile.write(message + "\n")
+
 if __name__ == '__main__':
+    append('Starting...')
     file_containing_urls = sys.argv[1]
     destination_directory = sys.argv[2]
+    append('Args: ' + file_containing_urls + ' ' + destination_directory)
+
     download_resources_listed_in_file(file_containing_urls, destination_directory)
+    append('Completed')

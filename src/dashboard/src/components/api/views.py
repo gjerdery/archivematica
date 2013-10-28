@@ -327,27 +327,59 @@ def create_or_list_transfers(request):
                     transfer_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
                 transfer_uuid = _create_transfer_directory_and_db_entry(transfer_specification)
 
-                # TODO: parse XML and start fetching jobs if needed
-                mock_object_content_urls = [
-                  'http://127.0.0.1:8080/fedora/objects/people:rick/datastreams/rick_pic/content'
-                ]
-
-                # write resources to temp file
-                temp_dir = tempfile.mkdtemp()
-                resource_list_filename = os.path.join(temp_dir, 'resource_list.txt')
-                with open(resource_list_filename, 'w') as resource_list_file:
-                    for url in mock_object_content_urls:
-                        resource_list_file.write(url + "\n")
-
-                return HttpResponse(resource_list_filename + ' ' + _transfer_storage_path(transfer_uuid))
-                # submit download job
-                # TODO: create task record so progress can be tracked
-                gm_client = gearman.GearmanClient(['localhost:4730'])
-                data = {'createdDate' : datetime.datetime.now().__str__()}
-                data['arguments'] = resource_list_filename + ' "' + _transfer_storage_path(transfer_uuid) + '"'
-                result = gm_client.submit_job('fetchfedoracommonsobjectcontent_v0.0', cPickle.dumps(data), '1145')
-
                 if transfer_uuid != None:
+                    # TODO: parse XML and start fetching jobs if needed
+                    mock_object_content_urls = [
+                        'http://127.0.0.1:8080/fedora/objects/hat:man/datastreams/rickpic/content',
+                        'http://127.0.0.1:8080/fedora/objects/hat:man/datastreams/rickpic2/content'
+                    ]
+
+                    # write resources to temp file
+                    temp_dir = tempfile.mkdtemp()
+                    resource_list_filename = os.path.join(temp_dir, 'resource_list.txt')
+                    with open(resource_list_filename, 'w') as resource_list_file:
+                        for url in mock_object_content_urls:
+                            resource_list_file.write(url + "\n")
+
+                    import stat
+                    st = os.stat(resource_list_filename)
+                    os.chmod(resource_list_filename, st.st_mode | stat.S_IRGRP)
+
+                    # create task record so progress can be tracked
+                    task_uuid = uuid.uuid4().__str__()
+                    arguments = '"' + resource_list_filename + '" "' + _transfer_storage_path(transfer_uuid) + '"'
+
+                    """
+                    task = models.Task()
+                    task.taskuuid = task_uuid
+                    task.execution = 'fetchFedoraCommonsObjectContent_v0.0'
+                    task.arguments = arguments
+                    task.client = 'archivematicaDev_1'
+                    task.save()
+
+                    class Task(models.Model):
+                     taskuuid = models.CharField(max_length=36, primary_key=True, db_column='taskUUID')
+                     job = models.ForeignKey(Job, db_column='jobuuid', to_field = 'jobuuid')
+                     createdtime = models.DateTimeField(db_column='createdTime')
+                     fileuuid = models.CharField(max_length=36, db_column='fileUUID', blank=True)
+                     filename = models.CharField(max_length=100, db_column='fileName', blank=True)
+                     execution = models.CharField(max_length=250, db_column='exec', blank=True)
+                     arguments = models.CharField(max_length=1000, blank=True)
+                     starttime = models.DateTimeField(db_column='startTime')
+                     client = models.CharField(max_length=50, blank=True)
+                     endtime = models.DateTimeField(db_column='endTime')
+                     stdout = models.TextField(db_column='stdOut', blank=True)
+                     stderror = models.TextField(db_column='stdError', blank=True)
+                     exitcode = models.IntegerField(null=True, db_column='exitCode', blank=True)
+                    """
+
+                    # submit job to gearman
+                    gm_client = gearman.GearmanClient(['localhost:4730'])
+                    data = {'createdDate' : datetime.datetime.now().__str__()}
+                    data['arguments'] = arguments
+                    result = gm_client.submit_job('fetchfedoracommonsobjectcontent_v0.0', cPickle.dumps(data), task_uuid)
+
+                    return HttpResponse('A:' + arguments + "\n")
                     receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
                     response = HttpResponse(receipt_xml, mimetype='text/xml', status=201)
                     response['Location'] = transfer_uuid
