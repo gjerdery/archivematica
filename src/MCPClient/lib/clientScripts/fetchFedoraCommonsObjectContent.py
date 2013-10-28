@@ -21,26 +21,51 @@
 # @subpackage archivematicaClientScript
 # @author Mike Cantelon <mike@artefactual.com>
 
+import os
+import shutil
 import sys
 import urllib2
+import tempfile
 
-def download_resorces_listed_in_file(file_containing_urls, destination_directory):
+def download_resources_listed_in_file(file_containing_urls, destination_directory):
+    download_counter = 1
+    temp_dir = tempfile.mkdtemp()
+
+    # download each resource in file containing URLs
     urls = open(file_containing_urls, 'r')
     for url in urls:
-        # TODO: change destination_directory into a file
-        download_resource(url, destination_directory)
+        # down resource to a temporary file
+        temp_filepath = os.path.join(temp_dir, str(download_counter))
+        response = download_resource(url, temp_filepath)
+
+        # move to destination_directory
+        destination_filepath = os.path.join(destination_directory, _filename_from_response(response))
+        shutil.move(temp_filepath, destination_filepath)
+        download_counter += 1
     urls.close()
+
+    # cleanup
+    os.rmdir(temp_dir)
+
+def _filename_from_response(response):
+    info = response.info()
+    return _parse_filename_from_content_disposition(info['content-disposition'])
+
+def _parse_filename_from_content_disposition(content_disposition):
+    filename_start = content_disposition.index('filename="') + 10
+    return content_disposition[filename_start:-1]
 
 def download_resource(url, filepath):
     request = urllib2.urlopen(url)
     buffer = 16 * 1024
     with open(filepath, 'wb') as fp:
         while True:
-            chunk = req.read(buffer)
+            chunk = request.read(buffer)
             if not chunk: break
             fp.write(chunk)
+    return request
 
 if __name__ == '__main__':
     file_containing_urls = sys.argv[1]
     destination_directory = sys.argv[2]
-    download_resorces_listed_in_file(file_containing_urls, destination_directory)
+    download_resources_listed_in_file(file_containing_urls, destination_directory)
