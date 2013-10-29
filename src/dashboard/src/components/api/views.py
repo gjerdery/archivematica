@@ -347,30 +347,6 @@ def create_or_list_transfers(request):
                     task_uuid = uuid.uuid4().__str__()
                     arguments = '"' + resource_list_filename + '" "' + _transfer_storage_path(transfer_uuid) + '"'
 
-                    """
-                    task = models.Task()
-                    task.taskuuid = task_uuid
-                    task.execution = 'fetchFedoraCommonsObjectContent_v0.0'
-                    task.arguments = arguments
-                    task.client = 'archivematicaDev_1'
-                    task.save()
-
-                    class Task(models.Model):
-                     taskuuid = models.CharField(max_length=36, primary_key=True, db_column='taskUUID')
-                     job = models.ForeignKey(Job, db_column='jobuuid', to_field = 'jobuuid')
-                     createdtime = models.DateTimeField(db_column='createdTime')
-                     fileuuid = models.CharField(max_length=36, db_column='fileUUID', blank=True)
-                     filename = models.CharField(max_length=100, db_column='fileName', blank=True)
-                     execution = models.CharField(max_length=250, db_column='exec', blank=True)
-                     arguments = models.CharField(max_length=1000, blank=True)
-                     starttime = models.DateTimeField(db_column='startTime')
-                     client = models.CharField(max_length=50, blank=True)
-                     endtime = models.DateTimeField(db_column='endTime')
-                     stdout = models.TextField(db_column='stdOut', blank=True)
-                     stderror = models.TextField(db_column='stdError', blank=True)
-                     exitcode = models.IntegerField(null=True, db_column='exitCode', blank=True)
-                    """
-
                     # submit job to gearman
                     gm_client = gearman.GearmanClient(['localhost:4730'])
                     data = {'createdDate' : datetime.datetime.now().__str__()}
