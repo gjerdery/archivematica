@@ -260,6 +260,7 @@ def _create_transfer_directory_and_db_entry(transfer_specification):
     )
 
     os.mkdir(transfer_path)
+    os.chmod(transfer_path, 02770) # drwxrws---
 
     if os.path.exists(transfer_path):
         transfer = models.Transfer.objects.create(
@@ -336,15 +337,11 @@ def create_or_list_transfers(request):
 
                     # write resources to temp file
                     temp_dir = tempfile.mkdtemp()
+                    os.chmod(temp_dir, 02770) # drwxrws---
                     resource_list_filename = os.path.join(temp_dir, 'resource_list.txt')
                     with open(resource_list_filename, 'w') as resource_list_file:
                         for url in mock_object_content_urls:
                             resource_list_file.write(url + "\n")
-
-                    temp_dir_privs = os.stat(temp_dir)
-                    os.chmod(temp_dir, temp_dir_privs.st_mode | stat.S_IRGRP | stat.S_IXGRP)
-                    resource_list_privs = os.stat(resource_list_filename)
-                    os.chmod(resource_list_filename, resource_list_privs.st_mode | stat.S_IRGRP)
 
                     # create task record so progress can be tracked
                     task_uuid = uuid.uuid4().__str__()
@@ -378,7 +375,20 @@ def create_or_list_transfers(request):
                     gm_client = gearman.GearmanClient(['localhost:4730'])
                     data = {'createdDate' : datetime.datetime.now().__str__()}
                     data['arguments'] = arguments
-                    result = gm_client.submit_job('fetchfedoracommonsobjectcontent_v0.0', cPickle.dumps(data), task_uuid)
+                    result = gm_client.submit_job(
+                        'fetchfedoracommonsobjectcontent_v0.0',
+                        cPickle.dumps(data),
+                        task_uuid,
+                        background=True
+                    )
+
+                    # create task record so it can be tracked
+                    task = models.Task()
+                    task.taskuuid = task_uuid
+                    task.execution = 'fetchFedoraCommonsObjectContent_v0.0'
+                    task.arguments = arguments
+                    task.client = 'archivematicaDev_1'
+                    task.save()
 
                     return HttpResponse('A:' + arguments + "\n")
                     receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
