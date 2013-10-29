@@ -21,6 +21,7 @@ import os
 import gearman
 import json
 import shutil
+import stat
 import tempfile
 import uuid
 from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseServerError
@@ -330,8 +331,7 @@ def create_or_list_transfers(request):
                 if transfer_uuid != None:
                     # TODO: parse XML and start fetching jobs if needed
                     mock_object_content_urls = [
-                        'http://127.0.0.1:8080/fedora/objects/hat:man/datastreams/rickpic/content',
-                        'http://127.0.0.1:8080/fedora/objects/hat:man/datastreams/rickpic2/content'
+                        'http://127.0.0.1:8080/fedora/objects/people:rick/datastreams/rick_pic/content'
                     ]
 
                     # write resources to temp file
@@ -341,9 +341,10 @@ def create_or_list_transfers(request):
                         for url in mock_object_content_urls:
                             resource_list_file.write(url + "\n")
 
-                    import stat
-                    st = os.stat(resource_list_filename)
-                    os.chmod(resource_list_filename, st.st_mode | stat.S_IRGRP)
+                    temp_dir_privs = os.stat(temp_dir)
+                    os.chmod(temp_dir, temp_dir_privs.st_mode | stat.S_IRGRP | stat.S_IXGRP)
+                    resource_list_privs = os.stat(resource_list_filename)
+                    os.chmod(resource_list_filename, resource_list_privs.st_mode | stat.S_IRGRP)
 
                     # create task record so progress can be tracked
                     task_uuid = uuid.uuid4().__str__()
