@@ -343,6 +343,8 @@ def copy_to_start_transfer(filepath, type='', metadata={}):
 
     if 'accession' in metadata:
         accession = metadata['accession']
+    else:
+        accession = ''
 
     if error == None:
         # confine destination to subdir of originals

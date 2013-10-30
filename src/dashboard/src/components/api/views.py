@@ -299,11 +299,7 @@ Example GET of transfers list:
 
 Example POST creation of transfer:
 
-  curl -v -d "some METS XML" --request POST http://localhost/api/v2/transfer/
-
-Example POST finalization of transfer:
-
-  curl -v -H "In-Progress: false" --request POST http://localhost/api/v2/transfer/
+  curl -v -H "In-Progress: true" -d "some METS XML" --request POST http://localhost/api/v2/transfer/
 """
 # TODO: add authentication
 # TODO: error is transfer completed, but has no files?
@@ -372,6 +368,11 @@ def create_or_list_transfers(request):
     else:
         return HttpResponse(status=405) # Method not allowed
 
+"""
+Example POST finalization of transfer:
+
+  curl -v -H "In-Progress: false" --request POST http://localhost/api/v2/transfer/5bdf83cd-5858-4152-90e2-c2426e90e7c0/
+"""
 # TODO: add authentication
 def transfer(request, uuid):
     if request.method == 'GET':
