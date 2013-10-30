@@ -376,24 +376,22 @@ def create_or_list_transfers(request):
 def transfer(request, uuid):
     if request.method == 'GET':
         # details about a transfer
-        return HttpResponse('')
+        return HttpResponse('Some detail XML')
     elif request.method == 'POST':
         # is the transfer ready to move to a processing directory?
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
-            # TODO: start a background job to wait until all related jobs are done then move the
-            # transfer files into the appropriate watch directory
-            #
-            #   fetch transfer using ID
-            #   transfer = models.Transfer.objects.get(uuid=)
-            #   shutil.move(transfer.currentlocation, standard_transfers_directory)
-            helpers.copy_to_start_transfer(filepath, 'standard', {'uuid': uuid})
-            return HttpResponse('')
+            # TODO: check that related task is complete before copying
+            transfer = models.Transfer.objects.get(uuid=uuid)
+            helpers.copy_to_start_transfer(transfer.currentlocation, 'standard', {'uuid': uuid})
+            return HttpResponse('Transfer finalized and ready for approval.')
+        else:
+            return HttpResponse(status=400) # Bad request
     elif request.method == 'PUT':
         # update transfer and return details
-        return HttpResponse('')
+        return HttpResponse('Transfer updated.')
     elif request.method == 'DELETE':
         # delete transfer
-        return HttpResponse('')
+        return HttpResponse('Transfer deleted.')
     else:
         # return HTTP 405, method not allowed
         return HttpResponse(status=405)
