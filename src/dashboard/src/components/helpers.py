@@ -21,6 +21,8 @@ import logging
 import mimetypes
 import os
 import pprint
+import shutil
+import sys
 import urllib
 import json
 
@@ -335,4 +337,83 @@ def hidden_features():
 
     return hide_features
 
+def copy_to_start_transfer(filepath, type='', accession=''):
+    error = check_filepath_exists(filepath)
 
+    if error == None:
+        # confine destination to subdir of originals
+        basename = os.path.basename(filepath)
+
+        # default to standard transfer
+        type_paths = {
+          'standard':     'standardTransfer',
+          'unzipped bag': 'baggitDirectory',
+          'zipped bag':   'baggitZippedDirectory',
+          'dspace':       'Dspace',
+          'maildir':      'maildir',
+          'TRIM':         'TRIM'
+        }
+
+        active_transfer_directory = os.path.join(
+            get_client_config_value('sharedDirectoryMounted'),
+            'watchedDirectories/activeTransfers'
+        )
+
+        try:
+          type_subdir = type_paths[type]
+          destination = os.path.join(active_transfer_directory, type_subdir)
+        except KeyError:
+          destination = os.path.join(active_transfer_directory, 'standardTransfer')
+
+        # if transfer compontent path leads to a ZIP file, treat as zipped
+        # bag
+        if not file_is_an_archive(filepath):
+            destination = os.path.join(destination, basename)
+            destination = pad_destination_filepath_if_it_already_exists(destination)
+
+        # relay accession via DB row that MCPClient scripts will use to get
+        # supplementary info from
+        if accession != '':
+            temp_uuid = uuid.uuid4().__str__()
+            mcp_destination = destination.replace(SHARED_DIRECTORY_ROOT + '/', '%sharedPath%') + '/'
+            transfer = models.Transfer.objects.create(
+                uuid=temp_uuid,
+                accessionid=accession,
+                currentlocation=mcp_destination
+            )
+            transfer.save()
+
+        try:
+            shutil.move(filepath, destination)
+        except:
+            error = 'Error copying from ' + filepath + ' to ' + destination + '. (' + str(sys.exc_info()[0]) + ')'
+
+    return error
+
+def check_filepath_exists(filepath):
+    error = None
+    if filepath == '':
+        error = 'No filepath provided.'
+
+    # check if exists
+    if error == None and not os.path.exists(filepath):
+        error = 'Filepath ' + filepath + ' does not exist.'
+
+    # check if is file or directory
+
+    # check for trickery
+    try:
+        filepath.index('..')
+        error = 'Illegal path.'
+    except:
+        pass
+
+    return error
+
+def pad_destination_filepath_if_it_already_exists(filepath, original=None, attempt=0):
+    if original == None:
+        original = filepath
+    attempt = attempt + 1
+    if os.path.exists(filepath):
+        return pad_destination_filepath_if_it_already_exists(original + '_' + str(attempt), original, attempt)
+    return filepath
