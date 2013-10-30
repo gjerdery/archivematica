@@ -312,16 +312,8 @@ def create_or_list_transfers(request):
         # return list of transfers
         return helpers.json_response(_transfer_list())
     elif request.method == 'POST':
-        # is the transfer ready to move to a processing directory?
-        if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
-            # TODO: start a background job to wait until all related jobs are done then move the
-            # transfer files into the appropriate watch directory
-            #
-            #   fetch transfer using ID
-            #   transfer = models.Transfer.objects.get(uuid=)
-            #   shutil.move(transfer.currentlocation, standard_transfers_directory)
-            return HttpResponse('')
-        else:
+        # is the transfer still in progress
+        if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'true':
             # process creation request, if criteria met
             if request.body != '':
                 transfer_specification = {}
@@ -375,6 +367,8 @@ def create_or_list_transfers(request):
                     return HttpResponse(status=500) # Server error
             else:
                 return HttpResponse(status=400) # Bad request
+        else:
+            return HttpResponse(status=400) # Bad request
     else:
         return HttpResponse(status=405) # Method not allowed
 
@@ -383,6 +377,17 @@ def transfer(request, uuid):
     if request.method == 'GET':
         # details about a transfer
         return HttpResponse('')
+    elif request.method == 'POST':
+        # is the transfer ready to move to a processing directory?
+        if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
+            # TODO: start a background job to wait until all related jobs are done then move the
+            # transfer files into the appropriate watch directory
+            #
+            #   fetch transfer using ID
+            #   transfer = models.Transfer.objects.get(uuid=)
+            #   shutil.move(transfer.currentlocation, standard_transfers_directory)
+            helpers.copy_to_start_transfer(filepath, 'standard', {'uuid': uuid})
+            return HttpResponse('')
     elif request.method == 'PUT':
         # update transfer and return details
         return HttpResponse('')

@@ -275,7 +275,8 @@ def copy_to_start_transfer(request):
     accession = request.POST.get('accession', '')
 
     filepath = os.path.join('/', filepath)
-    error = helpers.copy_to_start_transfer(filepath, type, accession)
+    metadata = {'accession': accession}
+    error = helpers.copy_to_start_transfer(filepath, type, metadata)
 
     response = {}
 

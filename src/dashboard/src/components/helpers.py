@@ -24,6 +24,7 @@ import pprint
 import shutil
 import sys
 import urllib
+import uuid
 import json
 
 from django.utils.dateformat import format
@@ -337,29 +338,24 @@ def hidden_features():
 
     return hide_features
 
-def copy_to_start_transfer(filepath, type='', accession=''):
+def copy_to_start_transfer(filepath, type='', metadata={}):
     error = check_filepath_exists(filepath)
+
+    if 'accession' in metadata:
+        accession = metadata['accession']
 
     if error == None:
         # confine destination to subdir of originals
         basename = os.path.basename(filepath)
-
-        # default to standard transfer
-        type_paths = {
-          'standard':     'standardTransfer',
-          'unzipped bag': 'baggitDirectory',
-          'zipped bag':   'baggitZippedDirectory',
-          'dspace':       'Dspace',
-          'maildir':      'maildir',
-          'TRIM':         'TRIM'
-        }
 
         active_transfer_directory = os.path.join(
             get_client_config_value('sharedDirectoryMounted'),
             'watchedDirectories/activeTransfers'
         )
 
+        # default to standard transfer
         try:
+          type_paths = transfer_type_directories()
           type_subdir = type_paths[type]
           destination = os.path.join(active_transfer_directory, type_subdir)
         except KeyError:
@@ -373,15 +369,21 @@ def copy_to_start_transfer(filepath, type='', accession=''):
 
         # relay accession via DB row that MCPClient scripts will use to get
         # supplementary info from
-        if accession != '':
+        if 'uuid' in metadata:
+            transfer = models.Transfer.objects.get(uuid=metadata['uuid'])
+        else:
             temp_uuid = uuid.uuid4().__str__()
-            mcp_destination = destination.replace(SHARED_DIRECTORY_ROOT + '/', '%sharedPath%') + '/'
-            transfer = models.Transfer.objects.create(
-                uuid=temp_uuid,
-                accessionid=accession,
-                currentlocation=mcp_destination
-            )
-            transfer.save()
+            transfer = models.Transfer.objects.create(uuid=temp_uuid)
+
+        transfer.currentlocation = destination.replace(
+            get_client_config_value('sharedDirectoryMounted'),
+            '%sharedPath%'
+        ) + '/'
+
+        if accession != '':
+            transfer.accessionid = accession
+
+        transfer.save()
 
         try:
             shutil.move(filepath, destination)
