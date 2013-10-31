@@ -152,6 +152,11 @@ def index(request):
         {
             "name":  "compression_level",
             "label": "Select compression level"
+        },
+        {
+            "name": "extract_delete",
+            "label": "Delete package after extraction?",
+            "link_uuid": "f19926dd-8fb5-4c79-8ade-c83f61f55b40"
         }
     ]
 

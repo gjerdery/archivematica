@@ -29,5 +29,9 @@
       <appliesTo>Extract packages</appliesTo>
       <goToChain>Extract</goToChain>
     </preconfiguredChoice>
+    <preconfiguredChoice>
+      <appliesTo>Delete package after extraction?</appliesTo>
+      <goToChain>Delete</goToChain>
+    </preconfiguredChoice>
   </preconfiguredChoices>
 </processingMCP>
