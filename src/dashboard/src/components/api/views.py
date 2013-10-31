@@ -401,7 +401,8 @@ Example GET of files list:
 
 Example POST of file:
 
-  curl -v -d "filename=thing.jpg" --request POST --data-binary "@joke.jpg" \
+  curl -v -H "Content-Disposition: attachment; filename=joke.jpg" --request POST \
+    --data-binary "@joke.jpg" \
     http://localhost/api/v2/transfer/03ce11a5-32c1-445a-83ac-400008894f78/media/
 
 Example DELETE of file:
@@ -410,7 +411,7 @@ Example DELETE of file:
     "http://localhost/api/v2/transfer/03ce11a5-32c1-445a-83ac-400008894f78/media/?filename=thing.jpg"
 """
 # TODO: implement Content-MD5 header so we can verify file upload was successful
-# TODO: replace use of "filename" params with Content-Disposition for POST, example: Content-Disposition: attachment; filename=[filename]
+# TODO: better Content-Disposition header parsing
 # TODO: add authentication
 def transfer_files(request, uuid):
     if request.method == 'GET':
@@ -422,11 +423,19 @@ def transfer_files(request, uuid):
     elif request.method == 'POST':
         # add a file to the transfer
         # file is in body
-        filename = request.POST.get('filename')
-        if filename != '':
-            file_path = os.path.join(_transfer_storage_path(uuid), filename)
-            bytes_written = _write_file_from_request_body(request, file_path)
-            return HttpResponse('Wrote ' + str(bytes_written))
+        if 'HTTP_CONTENT_DISPOSITION' in request.META:
+            filename = request.META['HTTP_CONTENT_DISPOSITION']
+
+            # TODO: fix temporary hack
+            # TODO: handle malformed header
+            filename = filename.replace('attachment; filename=', '')
+
+            if filename != '':
+                file_path = os.path.join(_transfer_storage_path(uuid), filename)
+                bytes_written = _write_file_from_request_body(request, file_path)
+                return HttpResponse('Wrote ' + str(bytes_written))
+            else:
+                return HttpResponse(status=400) # Bad request
         else:
             return HttpResponse(status=400) # Bad request
     elif request.method == 'DELETE':
