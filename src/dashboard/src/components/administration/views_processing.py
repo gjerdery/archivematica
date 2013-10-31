@@ -114,6 +114,11 @@ def index(request):
             "name":  "normalize",
             "label": "Normalize",
             "link_uuid": "cb8e5706-e73f-472f-ad9b-d1236af8095f",
+        },
+        {
+            "name": "extract_packages",
+            "label": "Extract packages",
+            "link_uuid": "dec97e3c-5598-4b99-b26e-f87a435a6b7f"
         }
     ]
 
