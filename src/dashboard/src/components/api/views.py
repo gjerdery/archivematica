@@ -238,25 +238,22 @@ def approve_transfer_via_mcp(directory, type, user_id):
 
     return error
 
-def _transfer_storage_path(uuid=None):
-    shared_directory_path = helpers.get_server_config_value('sharedDirectory')
+def _transfer_storage_path(uuid):
+    transfer = models.Transfer.objects.get(uuid=uuid)
+    return transfer.currentlocation
 
-    storage_path = os.path.join(
-        shared_directory_path,
-        'www/AIPsStore/transferBacklog/originals'
+def _transfer_storage_path_root():
+    return os.path.join(
+            helpers.get_server_config_value('sharedDirectory'),
+            'www/AIPsStore/transferBacklog/originals'
     )
-
-    if uuid == None:
-        return storage_path
-    else:
-        return os.path.join(storage_path, uuid)
 
 def _create_transfer_directory_and_db_entry(transfer_specification):
     transfer_uuid = uuid.uuid4().__str__()
 
     transfer_path = os.path.join(
-        _transfer_storage_path(),
-        transfer_uuid
+        _transfer_storage_path_root(),
+        'TEST'
     )
 
     os.mkdir(transfer_path)
@@ -276,7 +273,7 @@ def _create_transfer_directory_and_db_entry(transfer_specification):
 
 def _transfer_list():
     transfer_list = []
-    transfers = models.Transfer.objects.filter(currentlocation__startswith=_transfer_storage_path())
+    transfers = models.Transfer.objects.filter(currentlocation__startswith=_transfer_storage_path_root())
     for transfer in transfers:
         transfer_list.append(transfer.uuid)
     return transfer_list
@@ -354,7 +351,7 @@ def create_or_list_transfers(request):
                     task.client = 'archivematicaDev_1'
                     task.save()
 
-                    return HttpResponse('A:' + arguments + "\n")
+                    return HttpResponse('Started transfer UUID ' + transfer_uuid + ".\n")
                     receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
                     response = HttpResponse(receipt_xml, mimetype='text/xml', status=201)
                     response['Location'] = transfer_uuid
