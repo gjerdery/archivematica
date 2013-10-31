@@ -2,17 +2,18 @@
         xmlns:sword="http://purl.org/net/sword/"
         xmlns:dcterms="http://purl.org/dc/terms/">
 
-    <title>My Deposit</title>
-    <id>info:something:1</id>
-    <updated>2008-08-18T14:27:08Z</updated>
-    <generator uri="http://www.myrepository.ac.uk/sword-plugin" version="1.0"/>
+    <title>{{ transfer_name }}</title>
+    <id>{{ transfer_id }}</id>
+    <updated>{{ current_datetime }}</updated>
+    <generator uri="https://www.archivematica.org" version="1.0"/>
 
-    <sword:treatment>Transfer finalized.</sword:treatment>
+    <summary>An Archivematica transfer was started.</summary>
+    <sword:treatment>A temporary transfer directory was created.</sword:treatment>
 
     <link rel="alternate" href="http://www.swordserver.ac.uk/col1/mydeposit.html"/>
     <link rel="edit-media" href="{% url 'components.api.views.transfer_files' transfer_uuid %}"/>
     <link rel="edit" href="{% url 'components.api.views.transfer' transfer_uuid %}" />
-    <link rel="http://purl.org/net/sword/terms/add" href="http://www.swordserver.ac.uk/col1/mydeposit.atom" />
+    <link rel="http://purl.org/net/sword/terms/add" href="{% url 'components.api.views.transfer' transfer_uuid %}" />
     <link rel="http://purl.org/net/sword/terms/statement" type="application/atom+xml;type=feed"
       href="{% url 'components.api.views.transfer_state' transfer_uuid %}" />
 </entry>

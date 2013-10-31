@@ -351,7 +351,6 @@ def create_or_list_transfers(request):
                     task.client = 'archivematicaDev_1'
                     task.save()
 
-                    return HttpResponse('Started transfer UUID ' + transfer_uuid + ".\n")
                     receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
                     response = HttpResponse(receipt_xml, mimetype='text/xml', status=201)
                     response['Location'] = transfer_uuid
