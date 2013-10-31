@@ -368,6 +368,10 @@ def create_or_list_transfers(request):
 Example POST finalization of transfer:
 
   curl -v -H "In-Progress: false" --request POST http://localhost/api/v2/transfer/5bdf83cd-5858-4152-90e2-c2426e90e7c0/
+
+Example DELETE if transfer:
+
+  curl -v -XDELETE http://localhost/api/v2/transfer/5bdf83cd-5858-4152-90e2-c2426e90e7c0/
 """
 # TODO: add authentication
 def transfer(request, uuid):
@@ -387,7 +391,13 @@ def transfer(request, uuid):
         # update transfer and return details
         return HttpResponse('Transfer updated.')
     elif request.method == 'DELETE':
-        # delete transfer
+        # delete transfer files
+        transfer_path = _transfer_storage_path(uuid)
+        shutil.rmtree(transfer_path)
+
+        # delete entry in Transfers table (and task?)
+        transfer = models.Transfer.objects.get(uuid=uuid)
+        transfer.delete()
         return HttpResponse('Transfer deleted.')
     else:
         # return HTTP 405, method not allowed
