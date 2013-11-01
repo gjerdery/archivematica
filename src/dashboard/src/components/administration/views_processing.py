@@ -118,6 +118,7 @@ def index(request):
         {
             "name":  "examine",
             "label": "Examine contents",
+            "lookup description": "Examine contents?",
             "link_uuid": "accea2bf-ba74-4a3a-bb97-614775c74459"
         }
     ]
