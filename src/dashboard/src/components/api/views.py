@@ -24,6 +24,7 @@ import shutil
 import stat
 import tempfile
 import threading
+import time
 import uuid
 from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseServerError
 from django.db.models import Q
@@ -414,7 +415,12 @@ def transfer(request, uuid):
             try:
                 transfer = models.Transfer.objects.get(uuid=uuid)
                 helpers.copy_to_start_transfer(transfer.currentlocation, 'standard', {'uuid': uuid})
-                return HttpResponse('Transfer finalized and ready for approval.')
+
+                # wait for watch directory to determine a transfer is awaiting approval then attempt to approve it
+                time.sleep(2)
+                approve_transfer_via_mcp(os.path.basename(transfer.currentlocation), 'standard', 1) # TODO: replace hardcoded user ID
+
+                return HttpResponse('Transfer finalized and approved.')
             except ObjectDoesNotExist:
                 return HttpResponse(status=404) # Not found
         else:
