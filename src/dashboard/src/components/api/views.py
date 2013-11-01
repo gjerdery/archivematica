@@ -300,6 +300,17 @@ def _flush_transaction():
     transaction.commit()
 
 def _fetch_content(transfer_uuid, resource_list_filename):
+    # create job record to associate tasks with the transfer
+    now = datetime.datetime.now()
+    job_uuid = uuid.uuid4().__str__()
+    job = models.Job()
+    job.jobuuid = job_uuid
+    job.sipuuid = transfer_uuid
+    job.createdtime = now.__str__()
+    job.createdtimedec = int(now.strftime("%s"))
+    job.hidden = True
+    job.save()
+
     # create task record so progress can be tracked
     task_uuid = uuid.uuid4().__str__()
     arguments = '"' + resource_list_filename + '" "' + _transfer_storage_path(transfer_uuid) + '"'
@@ -307,8 +318,9 @@ def _fetch_content(transfer_uuid, resource_list_filename):
     # create task record so time can be tracked by the MCP client
     # ...Django doesn't like putting 0 in datetime fields
     # TODO: put in arguments, etc. and use proper sanitization
-    sql = "INSERT INTO Tasks (taskUUID, startTime) VALUES ('" + task_uuid + "', 0)"
+    sql = "INSERT INTO Tasks (taskUUID, jobUUID, startTime) VALUES ('" + task_uuid + "', '" + job_uuid + "', 0)"
     databaseInterface.runSQL(sql)
+    _flush_transaction() # refresh ORM after manual SQL
 
     # submit job to gearman
     gm_client = gearman.GearmanClient(['localhost:4730'])
@@ -321,7 +333,6 @@ def _fetch_content(transfer_uuid, resource_list_filename):
     )
 
     # record task completion time
-    _flush_transaction() # refresh ORM after manual SQL
     task = models.Task.objects.get(taskuuid=task_uuid)
     task.endtime = datetime.datetime.now().__str__()
     task.save()
@@ -354,7 +365,7 @@ def create_or_list_transfers(request):
                 if transfer_uuid != None:
                     # TODO: parse XML and start fetching jobs if needed
                     mock_object_content_urls = [
-                        'http://127.0.0.1:8080/fedora/objects/people:rick/datastreams/rick_pic/content'
+                        'http://192.168.1.231:8080/fedora/objects/hat:man/datastreams/rickpic/content'
                     ]
 
                     # write resources to temp file
