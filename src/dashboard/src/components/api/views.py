@@ -256,6 +256,7 @@ def _create_transfer_directory_and_db_entry(transfer_specification):
         'TEST'
     )
 
+    transfer_path = helpers.pad_destination_filepath_if_it_already_exists(transfer_path)
     os.mkdir(transfer_path)
     os.chmod(transfer_path, 02770) # drwxrws---
 
