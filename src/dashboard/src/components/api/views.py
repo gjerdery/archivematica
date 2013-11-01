@@ -297,6 +297,33 @@ def _write_file_from_request_body(request, file_path):
     new_file.close()
     return bytes_written
 
+def _handle_upload_request(request, uuid, replace_file=False):
+    if 'HTTP_CONTENT_DISPOSITION' in request.META:
+        filename = request.META['HTTP_CONTENT_DISPOSITION']
+
+        # TODO: fix temporary hack
+        # TODO: handle malformed header
+        filename = filename.replace('attachment; filename=', '')
+
+        if filename != '':
+            file_path = os.path.join(_transfer_storage_path(uuid), filename)
+
+            if replace_file:
+                # if doing a file replace, the file being replaced must exist
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    bytes_written = _write_file_from_request_body(request, file_path)
+                else:
+                    return HttpResponse(status=400) # Bad request
+            else:
+                bytes_written = _write_file_from_request_body(request, file_path)
+
+            return HttpResponse('Wrote ' + str(bytes_written))
+        else:
+            return HttpResponse(status=400) # Bad request
+    else:
+        return HttpResponse(status=400) # Bad request
+
 @transaction.commit_manually
 def _flush_transaction():
     transaction.commit()
@@ -467,24 +494,12 @@ def transfer_files(request, uuid):
             return helpers.json_response(os.listdir(transfer_path))
         else:
             return HttpResponse(status=404) # Not found
+    elif request.method == 'PUT':
+        # replace a file in the transfer
+        return _handle_upload_request(request, uuid, True)
     elif request.method == 'POST':
         # add a file to the transfer
-        # file is in body
-        if 'HTTP_CONTENT_DISPOSITION' in request.META:
-            filename = request.META['HTTP_CONTENT_DISPOSITION']
-
-            # TODO: fix temporary hack
-            # TODO: handle malformed header
-            filename = filename.replace('attachment; filename=', '')
-
-            if filename != '':
-                file_path = os.path.join(_transfer_storage_path(uuid), filename)
-                bytes_written = _write_file_from_request_body(request, file_path)
-                return HttpResponse('Wrote ' + str(bytes_written))
-            else:
-                return HttpResponse(status=400) # Bad request
-        else:
-            return HttpResponse(status=400) # Bad request
+        return _handle_upload_request(request, uuid)
     elif request.method == 'DELETE':
         filename = request.GET.get('filename', '')
         if filename != '':
