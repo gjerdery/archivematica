@@ -23,14 +23,19 @@ import json
 import shutil
 import stat
 import tempfile
+import threading
 import uuid
 from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseServerError
 from django.db.models import Q
+from django.db import transaction
 from django.template.loader import render_to_string
 from tastypie.authentication import ApiKeyAuthentication
 from contrib.mcp.client import MCPClient
 from main import models
 from components import helpers
+import sys
+sys.path.append("/usr/lib/archivematica/archivematicaCommon")
+import databaseInterface
 
 def authenticate_request(request):
     error = None
@@ -290,6 +295,37 @@ def _write_file_from_request_body(request, file_path):
     new_file.close()
     return bytes_written
 
+@transaction.commit_manually
+def _flush_transaction():
+    transaction.commit()
+
+def _fetch_content(transfer_uuid, resource_list_filename):
+    # create task record so progress can be tracked
+    task_uuid = uuid.uuid4().__str__()
+    arguments = '"' + resource_list_filename + '" "' + _transfer_storage_path(transfer_uuid) + '"'
+
+    # create task record so time can be tracked by the MCP client
+    # ...Django doesn't like putting 0 in datetime fields
+    # TODO: put in arguments, etc. and use proper sanitization
+    sql = "INSERT INTO Tasks (taskUUID, startTime) VALUES ('" + task_uuid + "', 0)"
+    databaseInterface.runSQL(sql)
+
+    # submit job to gearman
+    gm_client = gearman.GearmanClient(['localhost:4730'])
+    data = {'createdDate' : datetime.datetime.now().__str__()}
+    data['arguments'] = arguments
+    result = gm_client.submit_job(
+        'fetchfedoracommonsobjectcontent_v0.0',
+        cPickle.dumps(data),
+        task_uuid
+    )
+
+    # record task completion time
+    _flush_transaction() # refresh ORM after manual SQL
+    task = models.Task.objects.get(taskuuid=task_uuid)
+    task.endtime = datetime.datetime.now().__str__()
+    task.save()
+
 """
 Example GET of transfers list:
 
@@ -329,28 +365,8 @@ def create_or_list_transfers(request):
                         for url in mock_object_content_urls:
                             resource_list_file.write(url + "\n")
 
-                    # create task record so progress can be tracked
-                    task_uuid = uuid.uuid4().__str__()
-                    arguments = '"' + resource_list_filename + '" "' + _transfer_storage_path(transfer_uuid) + '"'
-
-                    # submit job to gearman
-                    gm_client = gearman.GearmanClient(['localhost:4730'])
-                    data = {'createdDate' : datetime.datetime.now().__str__()}
-                    data['arguments'] = arguments
-                    result = gm_client.submit_job(
-                        'fetchfedoracommonsobjectcontent_v0.0',
-                        cPickle.dumps(data),
-                        task_uuid,
-                        background=True
-                    )
-
-                    # create task record so it can be tracked
-                    task = models.Task()
-                    task.taskuuid = task_uuid
-                    task.execution = 'fetchFedoraCommonsObjectContent_v0.0'
-                    task.arguments = arguments
-                    task.client = 'archivematicaDev_1'
-                    task.save()
+                    thread = threading.Thread(target=_fetch_content, args=(transfer_uuid, resource_list_filename))
+                    thread.start()
 
                     receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
                     response = HttpResponse(receipt_xml, mimetype='text/xml', status=201)
