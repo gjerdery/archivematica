@@ -29,6 +29,7 @@ from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpRespon
 from django.db.models import Q
 from django.db import transaction
 from django.template.loader import render_to_string
+from django.core.exceptions import ObjectDoesNotExist
 from tastypie.authentication import ApiKeyAuthentication
 from contrib.mcp.client import MCPClient
 from main import models
@@ -410,9 +411,12 @@ def transfer(request, uuid):
         # is the transfer ready to move to a processing directory?
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
             # TODO: check that related task is complete before copying
-            transfer = models.Transfer.objects.get(uuid=uuid)
-            helpers.copy_to_start_transfer(transfer.currentlocation, 'standard', {'uuid': uuid})
-            return HttpResponse('Transfer finalized and ready for approval.')
+            try:
+                transfer = models.Transfer.objects.get(uuid=uuid)
+                helpers.copy_to_start_transfer(transfer.currentlocation, 'standard', {'uuid': uuid})
+                return HttpResponse('Transfer finalized and ready for approval.')
+            except ObjectDoesNotExist:
+                return HttpResponse(status=404) # Not found
         else:
             return HttpResponse(status=400) # Bad request
     elif request.method == 'PUT':
