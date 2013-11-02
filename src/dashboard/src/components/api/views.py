@@ -328,7 +328,15 @@ def _handle_upload_request(request, uuid, replace_file=False):
 def _flush_transaction():
     transaction.commit()
 
-def _fetch_content(transfer_uuid, resource_list_filename):
+def _fetch_content(transfer_uuid, object_content_urls):
+    # write resources to temp file
+    temp_dir = tempfile.mkdtemp()
+    os.chmod(temp_dir, 02770) # drwxrws---
+    resource_list_filename = os.path.join(temp_dir, 'resource_list.txt')
+    with open(resource_list_filename, 'w') as resource_list_file:
+        for url in object_content_urls:
+            resource_list_file.write(url + "\n")
+
     # create job record to associate tasks with the transfer
     now = datetime.datetime.now()
     job_uuid = uuid.uuid4().__str__()
@@ -366,6 +374,9 @@ def _fetch_content(transfer_uuid, resource_list_filename):
     task.endtime = datetime.datetime.now().__str__()
     task.save()
 
+    # delete temp dir
+    shutil.rmtree(temp_dir)
+
 """
 Example GET of transfers list:
 
@@ -397,6 +408,7 @@ def create_or_list_transfers(request):
                         'http://192.168.1.231:8080/fedora/objects/hat:man/datastreams/rickpic/content'
                     ]
 
+                    """
                     # write resources to temp file
                     temp_dir = tempfile.mkdtemp()
                     os.chmod(temp_dir, 02770) # drwxrws---
@@ -404,8 +416,9 @@ def create_or_list_transfers(request):
                     with open(resource_list_filename, 'w') as resource_list_file:
                         for url in mock_object_content_urls:
                             resource_list_file.write(url + "\n")
+                    """
 
-                    thread = threading.Thread(target=_fetch_content, args=(transfer_uuid, resource_list_filename))
+                    thread = threading.Thread(target=_fetch_content, args=(transfer_uuid, mock_object_content_urls))
                     thread.start()
 
                     receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
