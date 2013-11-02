@@ -408,19 +408,11 @@ def create_or_list_transfers(request):
                         'http://192.168.1.231:8080/fedora/objects/hat:man/datastreams/rickpic/content'
                     ]
 
-                    """
-                    # write resources to temp file
-                    temp_dir = tempfile.mkdtemp()
-                    os.chmod(temp_dir, 02770) # drwxrws---
-                    resource_list_filename = os.path.join(temp_dir, 'resource_list.txt')
-                    with open(resource_list_filename, 'w') as resource_list_file:
-                        for url in mock_object_content_urls:
-                            resource_list_file.write(url + "\n")
-                    """
-
+                    # create thread so content URLs can be downloaded asynchronously
                     thread = threading.Thread(target=_fetch_content, args=(transfer_uuid, mock_object_content_urls))
                     thread.start()
 
+                    # respond with SWORD 2.0 deposit receipt XML
                     receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
                     response = HttpResponse(receipt_xml, mimetype='text/xml', status=201)
                     response['Location'] = transfer_uuid
