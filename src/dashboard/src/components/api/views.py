@@ -371,7 +371,7 @@ def _fetch_content(transfer_uuid, object_content_urls):
 
     # record task completion time
     task = models.Task.objects.get(taskuuid=task_uuid)
-    task.endtime = datetime.datetime.now().__str__()
+    task.endtime = datetime.datetime.now().__str__() # TODO: endtime seems weird... Django time zone issue?
     task.save()
 
     # delete temp dir
@@ -444,13 +444,19 @@ def transfer(request, uuid):
         # is the transfer ready to move to a processing directory?
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
             # TODO: check that related task is complete before copying
+            # ...task row must exist and task endtime must be equal to or greater than start time
             try:
                 transfer = models.Transfer.objects.get(uuid=uuid)
                 helpers.copy_to_start_transfer(transfer.currentlocation, 'standard', {'uuid': uuid})
 
-                # wait for watch directory to determine a transfer is awaiting approval then attempt to approve it
+                # wait for watch directory to determine a transfer is awaiting
+                # approval then attempt to approve it
                 time.sleep(2)
-                approve_transfer_via_mcp(os.path.basename(transfer.currentlocation), 'standard', 1) # TODO: replace hardcoded user ID
+                approve_transfer_via_mcp(
+                    os.path.basename(transfer.currentlocation),
+                    'standard',
+                    1
+                ) # TODO: replace hardcoded user ID
 
                 return HttpResponse('Transfer finalized and approved.')
             except ObjectDoesNotExist:
