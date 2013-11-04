@@ -529,8 +529,34 @@ def transfer_files(request, uuid):
 # TODO: add authentication
 def transfer_state(request, uuid):
     if request.method == 'GET':
-        # details about a transfer's state
-        return HttpResponse('')
+        events = []
+
+        # get transfer creation job, if any
+        job = None
+        try:
+            job = models.Job.objects.filter(sipuuid=uuid, hidden=True)[0]
+        except:
+            return HttpResponse(status=404) # Not found
+
+        task = None
+        if job != None:
+            try:
+                task = models.Task.objects.filter(job=job)[0]
+            except:
+                pass
+
+        if task != None:
+            task_state = 'In progress'
+
+            if task.endtime != '':
+                task_state = 'Complete'
+
+            events.append({
+                "type":   "Creating transfer",
+                "status": task_state
+            })
+
+        return HttpResponse(events)
     else:
         # return HTTP 405, method not allowed
         return HttpResponse(status=405)
