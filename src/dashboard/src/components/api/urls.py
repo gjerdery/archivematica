@@ -28,11 +28,13 @@ urlpatterns = patterns('components.api.views',
     #(r'', include(selectionAPI.urls)),
     (r'transfer/approve/$', 'approve_transfer'), 
     (r'transfer/unapproved/$', 'unapproved_transfers'),
-    (r'v2/transfer/$', 'create_or_list_transfers'),
-    (r'v2/transfer/(?P<uuid>' + settings.UUID_REGEX + ')/$', 'transfer'),
-    (r'v2/transfer/(?P<uuid>' + settings.UUID_REGEX + ')/media/$', 'transfer_files'),
-    (r'v2/transfer/(?P<uuid>' + settings.UUID_REGEX + ')/state/$', 'transfer_state'),
 
-    (r'v2/transfer/approve/$', 'approve_transfer'),
-    (r'v2/transfer/unapproved/$', 'unapproved_transfers'),
+    # v2 URLs don't require trailing slash
+    (r'v2/transfer$', 'create_or_list_transfers'),
+    (r'v2/transfer/(?P<uuid>' + settings.UUID_REGEX + ')$', 'transfer'),
+    (r'v2/transfer/(?P<uuid>' + settings.UUID_REGEX + ')/media$', 'transfer_files'),
+    (r'v2/transfer/(?P<uuid>' + settings.UUID_REGEX + ')/state$', 'transfer_state'),
+
+    (r'v2/transfer/approve$', 'approve_transfer'),
+    (r'v2/transfer/unapproved$', 'unapproved_transfers'),
 )
