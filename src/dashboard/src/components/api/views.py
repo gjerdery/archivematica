@@ -406,11 +406,11 @@ def _fetch_content(transfer_uuid, object_content_urls):
 """
 Example GET of transfers list:
 
-  curl -v http://127.0.0.1/api/v2/transfer/
+  curl -v http://127.0.0.1/api/v2/transfer
 
 Example POST creation of transfer:
 
-  curl -v -H "In-Progress: true" -d "some METS XML" --request POST http://localhost/api/v2/transfer/
+  curl -v -H "In-Progress: true" -d "some METS XML" --request POST http://localhost/api/v2/transfer
 """
 # TODO: add authentication
 # TODO: error is transfer completed, but has no files?
@@ -494,11 +494,11 @@ def create_or_list_transfers(request):
 """
 Example POST finalization of transfer:
 
-  curl -v -H "In-Progress: false" --request POST http://localhost/api/v2/transfer/5bdf83cd-5858-4152-90e2-c2426e90e7c0/
+  curl -v -H "In-Progress: false" --request POST http://localhost/api/v2/transfer/5bdf83cd-5858-4152-90e2-c2426e90e7c0
 
 Example DELETE if transfer:
 
-  curl -v -XDELETE http://localhost/api/v2/transfer/5bdf83cd-5858-4152-90e2-c2426e90e7c0/
+  curl -v -XDELETE http://localhost/api/v2/transfer/5bdf83cd-5858-4152-90e2-c2426e90e7c0
 """
 # TODO: add authentication
 def transfer(request, uuid):
@@ -574,12 +574,12 @@ Example POST of file:
 
   curl -v -H "Content-Disposition: attachment; filename=joke.jpg" --request POST \
     --data-binary "@joke.jpg" \
-    http://localhost/api/v2/transfer/03ce11a5-32c1-445a-83ac-400008894f78/media/
+    http://localhost/api/v2/transfer/03ce11a5-32c1-445a-83ac-400008894f78/media
 
 Example DELETE of file:
 
   curl -v -XDELETE \
-    "http://localhost/api/v2/transfer/03ce11a5-32c1-445a-83ac-400008894f78/media/?filename=thing.jpg"
+    "http://localhost/api/v2/transfer/03ce11a5-32c1-445a-83ac-400008894f78/media?filename=thing.jpg"
 """
 # TODO: implement Content-MD5 header so we can verify file upload was successful
 # TODO: better Content-Disposition header parsing
