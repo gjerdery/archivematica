@@ -78,10 +78,10 @@ def index(request):
     boolean_select_fields = [
         {
             "name":       "quarantine_transfer",
+            'uuid':       "de195451-989e-48fe-ad0c-3ff2265b3410", # Workflow decision - send transfer to quarantine
             "label":      "Send transfer to quarantine",
             "yes_option": "Quarantine",
-            "no_option":  "Skip quarantine",
-            "applies_to": "Workflow decision - send transfer to quarantine"
+            "no_option":  "Skip quarantine"
         },
         {
             "name":       "normalize_transfer",
@@ -99,16 +99,14 @@ def index(request):
         }
     ]
 
-    # 'label': text to display, <label> in HTML.  Also, the
-    # 'lookup_description': TasksConfig description to search against to find
-    #   the MicroServiceChainLink for the
-    #   MicroServiceChainChoice.choiceavailableatlink  If not specified, use label
+    # 'label': text to display, <label> in HTML.
     # 'link_uuid': If there are conflicts on lookup_description, specify this
     #   to use that MicroServiceChainLink
     chain_choice_fields = [
         {
             "name":  "create_sip",
-            "label": "Create SIP(s)"
+            "label": "Create SIP(s)",
+            "uuid": "f1f0409b-d4f8-419a-b625-218dc1abd335"
         },
         {
             "name":  "normalize",
@@ -118,8 +116,7 @@ def index(request):
         {
             "name":  "examine",
             "label": "Examine contents",
-            "lookup description": "Examine contents?",
-            "link_uuid": "accea2bf-ba74-4a3a-bb97-614775c74459"
+            "uuid": "accea2bf-ba74-4a3a-bb97-614775c74459"
         }
     ]
 

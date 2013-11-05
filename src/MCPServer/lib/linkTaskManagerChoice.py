@@ -91,9 +91,9 @@ class linkTaskManagerChoice(LinkTaskManager):
                 root = tree.getroot()
                 for preconfiguredChoice in root.find("preconfiguredChoices"):
                     #if int(preconfiguredChoice.find("appliesTo").text) == self.jobChainLink.pk:
-                    if preconfiguredChoice.find("appliesTo").text == self.jobChainLink.description:
+                    if preconfiguredChoice.find("appliesTo").text == self.jobChainLink.UUID:
                         desiredChoice = preconfiguredChoice.find("goToChain").text
-                        sql = """SELECT MicroServiceChains.pk FROM MicroServiceChainChoice Join MicroServiceChains on MicroServiceChainChoice.chainAvailable = MicroServiceChains.pk WHERE MicroServiceChains.description = '%s' AND MicroServiceChainChoice.choiceAvailableAtLink = '%s';""" % (desiredChoice, self.jobChainLink.pk.__str__())
+                        sql = """SELECT MicroServiceChains.pk FROM MicroServiceChainChoice Join MicroServiceChains on MicroServiceChainChoice.chainAvailable = MicroServiceChains.pk WHERE MicroServiceChains.UUID = '%s' AND MicroServiceChainChoice.choiceAvailableAtLink = '%s';""" % (desiredChoice, self.jobChainLink.pk.__str__())
                         c, sqlLock = databaseInterface.querySQL(sql)
                         row = c.fetchone()
                         while row != None:
