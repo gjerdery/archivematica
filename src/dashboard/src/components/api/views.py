@@ -474,18 +474,22 @@ def transfer(request, uuid):
             # ...task row must exist and task endtime must be equal to or greater than start time
             try:
                 transfer = models.Transfer.objects.get(uuid=uuid)
-                helpers.copy_to_start_transfer(transfer.currentlocation, 'standard', {'uuid': uuid})
 
-                # wait for watch directory to determine a transfer is awaiting
-                # approval then attempt to approve it
-                time.sleep(2)
-                approve_transfer_via_mcp(
-                    os.path.basename(transfer.currentlocation),
-                    'standard',
+                if len(os.listdir(transfer.currentlocation)) > 0:
+                    helpers.copy_to_start_transfer(transfer.currentlocation, 'standard', {'uuid': uuid})
+
+                    # wait for watch directory to determine a transfer is awaiting
+                    # approval then attempt to approve it
+                    time.sleep(2)
+                    approve_transfer_via_mcp(
+                        os.path.basename(transfer.currentlocation),
+                        'standard',
                     1
-                ) # TODO: replace hardcoded user ID
+                    ) # TODO: replace hardcoded user ID
 
-                return HttpResponse('Transfer finalized and approved.')
+                    return HttpResponse('Transfer finalized and approved.')
+                else:
+                    return HttpResponse(status=400) # Bad request
             except ObjectDoesNotExist:
                 return HttpResponse(status=404) # Not found
         else:
