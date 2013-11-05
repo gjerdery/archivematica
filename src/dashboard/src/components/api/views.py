@@ -18,6 +18,7 @@
 import cPickle
 import datetime
 import os
+import feedparser
 import gearman
 import json
 import shutil
@@ -258,9 +259,14 @@ def _transfer_storage_path_root():
 def _create_transfer_directory_and_db_entry(transfer_specification):
     transfer_uuid = uuid.uuid4().__str__()
 
+    if 'name' in transfer_specification:
+        transfer_name = transfer_specification['name']
+    else:
+        transfer_name = 'Untitled'
+
     transfer_path = os.path.join(
         _transfer_storage_path_root(),
-        'TEST'
+        transfer_name
     )
 
     transfer_path = helpers.pad_destination_filepath_if_it_already_exists(transfer_path)
@@ -397,28 +403,49 @@ def create_or_list_transfers(request):
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'true':
             # process creation request, if criteria met
             if request.body != '':
-                transfer_specification = {}
-                if 'HTTP_ON_BEHALF_OF' in request.META:
-                    transfer_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
-                transfer_uuid = _create_transfer_directory_and_db_entry(transfer_specification)
+                try:
+                    # write request body to temp file as feedparser sometimes
+                    # hangs when parsing strings
+                    filehandle, temp_filepath = tempfile.mkstemp()
+                    _write_file_from_request_body(request, temp_filepath)
 
-                if transfer_uuid != None:
-                    # TODO: parse XML and start fetching jobs if needed
-                    mock_object_content_urls = [
-                        'http://192.168.1.231:8080/fedora/objects/hat:man/datastreams/rickpic/content'
-                    ]
+                    # parse transfer-related data from XML
+                    data = feedparser.parse(temp_filepath)
 
-                    # create thread so content URLs can be downloaded asynchronously
-                    thread = threading.Thread(target=_fetch_content, args=(transfer_uuid, mock_object_content_urls))
-                    thread.start()
+                    # extract transfer name from transfer-related data
+                    transfer_name = ''
+                    if 'entries' in data and len(data['entries']) > 0:
+                        entry = data['entries'][0]
+                        if  'title' in entry:
+                            transfer_name = entry['title']
 
-                    # respond with SWORD 2.0 deposit receipt XML
-                    receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
-                    response = HttpResponse(receipt_xml, mimetype='text/xml', status=201)
-                    response['Location'] = transfer_uuid
-                    return response # Created
-                else:
-                    return HttpResponse(status=500) # Server error
+                    # assemble transfer specification
+                    transfer_specification = {}
+                    transfer_specification['name'] = transfer_name
+                    if 'HTTP_ON_BEHALF_OF' in request.META:
+                        transfer_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
+
+                    transfer_uuid = _create_transfer_directory_and_db_entry(transfer_specification)
+
+                    if transfer_uuid != None:
+                        # TODO: parse XML and start fetching jobs if needed
+                        mock_object_content_urls = [
+                            'http://192.168.1.231:8080/fedora/objects/hat:man/datastreams/rickpic/content'
+                        ]
+
+                        # create thread so content URLs can be downloaded asynchronously
+                        thread = threading.Thread(target=_fetch_content, args=(transfer_uuid, mock_object_content_urls))
+                        thread.start()
+
+                        # respond with SWORD 2.0 deposit receipt XML
+                        receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
+                        response = HttpResponse(receipt_xml, mimetype='text/xml', status=201)
+                        response['Location'] = transfer_uuid
+                        return response # Created
+                    else:
+                        return HttpResponse(status=500) # Server error
+                except:
+                    return HttpResponse(status=400) # Bad request
             else:
                 return HttpResponse(status=400) # Bad request
         else:
