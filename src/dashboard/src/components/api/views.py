@@ -292,6 +292,13 @@ def _transfer_list():
         transfer_list.append(transfer.uuid)
     return transfer_list
 
+def _sword_error_response(request, error_details):
+    error_details['request'] = request
+    error_details['update_time'] = datetime.datetime.now().__str__()
+    error_details['user_agent'] = request.META['HTTP_USER_AGENT']
+    error_xml = render_to_string('api/sword_error.xml', error_details)
+    return HttpResponse(error_xml, status=error_details['status'])
+
 def _write_file_from_request_body(request, file_path):
     bytes_written = 0
     new_file = open(file_path, 'ab')
@@ -304,6 +311,9 @@ def _write_file_from_request_body(request, file_path):
     return bytes_written
 
 def _handle_upload_request(request, uuid, replace_file=False):
+    error = None
+    bad_request = None
+
     if 'HTTP_CONTENT_DISPOSITION' in request.META:
         filename = request.META['HTTP_CONTENT_DISPOSITION']
 
@@ -320,15 +330,25 @@ def _handle_upload_request(request, uuid, replace_file=False):
                     os.remove(file_path)
                     bytes_written = _write_file_from_request_body(request, file_path)
                 else:
-                    return HttpResponse(status=400) # Bad request
+                    bad_request = 'File does not exist.'
             else:
                 bytes_written = _write_file_from_request_body(request, file_path)
 
+            # TODO: better response
             return HttpResponse('Wrote ' + str(bytes_written))
         else:
-            return HttpResponse(status=400) # Bad request
+            bad_request = 'No filename found in Content-disposition header.'
     else:
-        return HttpResponse(status=400) # Bad request
+        bad_request = 'Content-disposition must be set in request header.'
+
+    if bad_request != None:
+        error = {
+            'summary': bad_request,
+            'status': 400
+        }
+
+    if error != None:
+        return _sword_error_response(request, error)
 
 @transaction.commit_manually
 def _flush_transaction():
@@ -395,6 +415,9 @@ Example POST creation of transfer:
 # TODO: add authentication
 # TODO: error is transfer completed, but has no files?
 def create_or_list_transfers(request):
+    error = None
+    bad_request = None
+
     if request.method == 'GET':
         # return list of transfers
         return helpers.json_response(_transfer_list())
@@ -443,15 +466,30 @@ def create_or_list_transfers(request):
                         response['Location'] = transfer_uuid
                         return response # Created
                     else:
-                        return HttpResponse(status=500) # Server error
+                        error = {
+                            'summary': 'Could not create transfer: contact an administrator.',
+                            'status': 500
+                        }
                 except:
-                    return HttpResponse(status=400) # Bad request
+                    bad_request = 'Error parsing request body.'
             else:
-                return HttpResponse(status=400) # Bad request
+                bad_request = 'A request body must be sent when creating a transfer.'
         else:
-            return HttpResponse(status=400) # Bad request
+            bad_request = 'The In-Progress header must be set to true when creating a transfer.'
     else:
-        return HttpResponse(status=405) # Method not allowed
+        error = {
+            'summary': 'This endpoint only responds to the GET and POST HTTP methods.',
+            'status': 405
+        }
+
+    if bad_request != None:
+        error = {
+            'summary': bad_request,
+            'status': 400
+        }
+
+    if error != None:
+        return _sword_error_response(request, error)
 
 """
 Example POST finalization of transfer:
@@ -464,6 +502,9 @@ Example DELETE if transfer:
 """
 # TODO: add authentication
 def transfer(request, uuid):
+    error = None
+    bad_request = None
+
     if request.method == 'GET':
         # details about a transfer
         return HttpResponse('Some detail XML')
@@ -489,11 +530,14 @@ def transfer(request, uuid):
 
                     return HttpResponse('Transfer finalized and approved.')
                 else:
-                    return HttpResponse(status=400) # Bad request
+                    bad_request = 'This transfer contains no files.'
             except ObjectDoesNotExist:
-                return HttpResponse(status=404) # Not found
+                error = {
+                    'summary': 'This transfer could not be found.',
+                    'status': 404
+                }
         else:
-            return HttpResponse(status=400) # Bad request
+            bad_request = 'The In-Progress header must be set to false when starting transfer processing.'
     elif request.method == 'PUT':
         # update transfer and return details
         return HttpResponse('Transfer updated.')
@@ -507,8 +551,19 @@ def transfer(request, uuid):
         transfer.delete()
         return HttpResponse('Transfer deleted.')
     else:
-        # return HTTP 405, method not allowed
-        return HttpResponse(status=405)
+        error = {
+            'summary': 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.',
+            'status': 405
+        }
+
+    if bad_request != None:
+        error = {
+            'summary': bad_request,
+            'status': 400
+        }
+
+    if error != None:
+                return _sword_error_response(request, error)
 
 """
 Example GET of files list:
@@ -530,12 +585,17 @@ Example DELETE of file:
 # TODO: better Content-Disposition header parsing
 # TODO: add authentication
 def transfer_files(request, uuid):
+    error = None
+
     if request.method == 'GET':
         transfer_path = _transfer_storage_path(uuid)
         if os.path.exists(transfer_path):
             return helpers.json_response(os.listdir(transfer_path))
         else:
-            return HttpResponse(status=404) # Not found
+            error = {
+                'summary': 'This transfer path does not exist.',
+                'status': 404
+            }
     elif request.method == 'PUT':
         # replace a file in the transfer
         return _handle_upload_request(request, uuid, True)
@@ -551,14 +611,28 @@ def transfer_files(request, uuid):
                 os.remove(file_path)
                 return HttpResponse('Deleted.')
             else:
-                return HttpResponse(status=404) # Not found
+                error = {
+                    'summary': 'The transfer path does not exist.',
+                    'status': 404
+                }
         else:
-            return HttpResponse(status=400) # Bad request
+            error = {
+                'summary': 'No filename specified.',
+                'status': 400
+            }
     else:
-        return HttpResponse(status=405) # Method not allowed
+        error = {
+            'summary': 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.',
+            'status': 405
+        }
+
+    if error != none:
+                return _sword_error_response(request, error)
 
 # TODO: add authentication
 def transfer_state(request, uuid):
+    error = None
+
     if request.method == 'GET':
         events = []
 
@@ -567,7 +641,10 @@ def transfer_state(request, uuid):
         try:
             job = models.Job.objects.filter(sipuuid=uuid, hidden=True)[0]
         except:
-            return HttpResponse(status=404) # Not found
+            error = {
+                'summary': 'Job not found. Contact an administrator.',
+                'status': 404
+            }
 
         task = None
         if job != None:
@@ -589,5 +666,10 @@ def transfer_state(request, uuid):
 
         return HttpResponse(events)
     else:
-        # return HTTP 405, method not allowed
-        return HttpResponse(status=405)
+        error = {
+            'summary': 'This endpoint only responds to the GET HTTP method.',
+            'status': 405
+        }
+
+    if error != none:
+                return _sword_error_response(request, error)
