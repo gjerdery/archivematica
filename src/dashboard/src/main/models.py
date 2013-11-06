@@ -180,6 +180,7 @@ class Transfer(models.Model):
     sourceofacquisition = models.TextField(db_column='sourceOfAcquisition')
     type = models.CharField(max_length=50, primary_key=True, db_column='type')
     accessionid = models.TextField(db_column='accessionID')
+    magiclink = models.TextField(db_column='magicLink', null=True)
     # ...
     hidden = models.BooleanField(default=False, blank=False)
 

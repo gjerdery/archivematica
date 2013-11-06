@@ -305,21 +305,24 @@ def transfer(request, uuid):
             try:
                 transfer = models.Transfer.objects.get(uuid=uuid)
 
-                if len(os.listdir(transfer.currentlocation)) > 0:
-                    helpers.copy_to_start_transfer(transfer.currentlocation, 'standard', {'uuid': uuid})
+                if transfer.magiclink == None:
+                    if len(os.listdir(transfer.currentlocation)) > 0:
+                        helpers.copy_to_start_transfer(transfer.currentlocation, 'standard', {'uuid': uuid})
 
-                    # wait for watch directory to determine a transfer is awaiting
-                    # approval then attempt to approve it
-                    time.sleep(5)
-                    approve_transfer_via_mcp(
-                        os.path.basename(transfer.currentlocation),
-                        'standard',
-                    1
-                    ) # TODO: replace hardcoded user ID
+                        # wait for watch directory to determine a transfer is awaiting
+                        # approval then attempt to approve it
+                        time.sleep(5)
+                        approve_transfer_via_mcp(
+                            os.path.basename(transfer.currentlocation),
+                            'standard',
+                        1
+                        ) # TODO: replace hardcoded user ID
 
-                    return HttpResponse('Transfer finalized and approved.')
+                        return HttpResponse('Transfer finalized and approved.')
+                    else:
+                        bad_request = 'This transfer contains no files.'
                 else:
-                    bad_request = 'This transfer contains no files.'
+                    bad_request = 'This transfer has already been started and approved.'
             except ObjectDoesNotExist:
                 error = {
                     'summary': 'This transfer could not be found.',
