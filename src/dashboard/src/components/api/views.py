@@ -18,7 +18,6 @@
 import cPickle
 import datetime
 import os
-import feedparser
 import gearman
 import json
 import shutil
@@ -27,6 +26,7 @@ import tempfile
 import threading
 import time
 import uuid
+from lxml import etree as etree
 from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseServerError
 from django.db.models import Q
 from django.db import transaction
@@ -427,51 +427,48 @@ def create_or_list_transfers(request):
             # process creation request, if criteria met
             if request.body != '':
                 try:
-                    # write request body to temp file as feedparser sometimes
-                    # hangs when parsing strings
+                    # write request body to temp file
                     filehandle, temp_filepath = tempfile.mkstemp()
                     _write_file_from_request_body(request, temp_filepath)
 
-                    # parse transfer-related data from XML
-                    data = feedparser.parse(temp_filepath)
+                    # parse XML
+                    try:
+                        tree = etree.parse(temp_filepath)
+                        root = tree.getroot()
+                        transfer_name = root.find("{http://www.w3.org/2005/Atom}title").text
 
-                    # extract transfer name from transfer-related data
-                    transfer_name = ''
-                    if 'entries' in data and len(data['entries']) > 0:
-                        entry = data['entries'][0]
-                        if  'title' in entry:
-                            transfer_name = entry['title']
+                        # assemble transfer specification
+                        transfer_specification = {}
+                        transfer_specification['name'] = transfer_name
+                        if 'HTTP_ON_BEHALF_OF' in request.META:
+                            transfer_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
 
-                    # assemble transfer specification
-                    transfer_specification = {}
-                    transfer_specification['name'] = transfer_name
-                    if 'HTTP_ON_BEHALF_OF' in request.META:
-                        transfer_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
+                        transfer_uuid = _create_transfer_directory_and_db_entry(transfer_specification)
 
-                    transfer_uuid = _create_transfer_directory_and_db_entry(transfer_specification)
+                        if transfer_uuid != None:
+                            # TODO: parse XML and start fetching jobs if needed
+                            mock_object_content_urls = [
+                                'http://192.168.1.231:8080/fedora/objects/hat:man/datastreams/rickpic/content'
+                            ]
 
-                    if transfer_uuid != None:
-                        # TODO: parse XML and start fetching jobs if needed
-                        mock_object_content_urls = [
-                            'http://192.168.1.231:8080/fedora/objects/hat:man/datastreams/rickpic/content'
-                        ]
+                            # create thread so content URLs can be downloaded asynchronously
+                            thread = threading.Thread(target=_fetch_content, args=(transfer_uuid, mock_object_content_urls))
+                            thread.start()
 
-                        # create thread so content URLs can be downloaded asynchronously
-                        thread = threading.Thread(target=_fetch_content, args=(transfer_uuid, mock_object_content_urls))
-                        thread.start()
-
-                        # respond with SWORD 2.0 deposit receipt XML
-                        receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
-                        response = HttpResponse(receipt_xml, mimetype='text/xml', status=201)
-                        response['Location'] = transfer_uuid
-                        return response # Created
-                    else:
-                        error = {
-                            'summary': 'Could not create transfer: contact an administrator.',
-                            'status': 500
+                            # respond with SWORD 2.0 deposit receipt XML
+                            receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
+                            response = HttpResponse(receipt_xml, mimetype='text/xml', status=201)
+                            response['Location'] = transfer_uuid
+                            return response # Created
+                        else:
+                            error = {
+                                'summary': 'Could not create transfer: contact an administrator.',
+                                'status': 500
                         }
+                    except etree.XMLSyntaxError:
+                        bad_request = 'Error parsing XML.'
                 except:
-                    bad_request = 'Error parsing request body.'
+                    bad_request = 'Error writing temp file.'
             else:
                 bad_request = 'A request body must be sent when creating a transfer.'
         else:
