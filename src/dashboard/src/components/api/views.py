@@ -253,7 +253,7 @@ def _transfer_storage_path(uuid):
 def _transfer_storage_path_root():
     return os.path.join(
             helpers.get_server_config_value('sharedDirectory'),
-            'www/AIPsStore/transferBacklog/originals'
+            'staging'
     )
 
 def _create_transfer_directory_and_db_entry(transfer_specification):
@@ -518,7 +518,7 @@ def transfer(request, uuid):
 
                     # wait for watch directory to determine a transfer is awaiting
                     # approval then attempt to approve it
-                    time.sleep(2)
+                    time.sleep(5)
                     approve_transfer_via_mcp(
                         os.path.basename(transfer.currentlocation),
                         'standard',
