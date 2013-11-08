@@ -194,6 +194,10 @@ def _fetch_content(transfer_uuid, object_content_urls):
     # delete temp dir
     shutil.rmtree(temp_dir)
 
+def service_document(request):
+    service_document_xml = render_to_string('api/service_document.xml')
+    return HttpResponse(service_document_xml)
+
 """
 Example GET of transfers list:
 
@@ -205,7 +209,7 @@ Example POST creation of transfer:
 """
 # TODO: add authentication
 # TODO: error is transfer completed, but has no files?
-def create_or_list_transfers(request):
+def transfer_collection(request):
     error = None
     bad_request = None
 

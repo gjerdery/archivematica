@@ -32,7 +32,8 @@ urlpatterns = patterns('components.api.views',
 
 urlpatterns += patterns('components.api.views_sword',
     # v2 URLs don't require trailing slash
-    (r'v2/transfer$', 'create_or_list_transfers'),
+    (r'v2/sword$', 'service_document'),
+    (r'v2/transfer$', 'transfer_collection'),
     (r'v2/transfer/(?P<uuid>' + settings.UUID_REGEX + ')$', 'transfer'),
     (r'v2/transfer/(?P<uuid>' + settings.UUID_REGEX + ')/media$', 'transfer_files'),
     (r'v2/transfer/(?P<uuid>' + settings.UUID_REGEX + ')/state$', 'transfer_state')
