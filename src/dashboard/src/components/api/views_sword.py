@@ -30,6 +30,7 @@ from django.http import HttpResponse
 from django.db import transaction
 from django.template.loader import render_to_string
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import reverse
 from django.shortcuts import render
 from main import models
 from components import helpers
@@ -216,13 +217,19 @@ def transfer_collection(request):
 
     if request.method == 'GET':
         # return list of transfers as ATOM feed
-        transfers = []
+        feed = {
+            'title': 'Transfers',
+            'url': reverse('components.api.views_sword.transfer_collection')
+        }
+
+        items = []
         for uuid in _transfer_list():
             transfer = models.Transfer.objects.get(uuid=uuid)
-            transfers.append({
-                'uuid': uuid,
-                'name': os.path.basename(transfer.currentlocation)
+            items.append({
+                'title': os.path.basename(transfer.currentlocation),
+                'url': reverse('components.api.views_sword.transfer', args=[uuid])
             })
+
         collection_xml = render_to_string('api/sword/collection.xml', locals())
         return HttpResponse(collection_xml)
     elif request.method == 'POST':
