@@ -195,9 +195,23 @@ def _fetch_content(transfer_uuid, object_content_urls):
     # delete temp dir
     shutil.rmtree(temp_dir)
 
+# respond with SWORD 2.0 deposit receipt XML
+def _deposit_receipt_response(transfer_uuid, status_code):
+    receipt_xml = render_to_string('api/sword/deposit_receipt.xml', {'transfer_uuid': transfer_uuid})
+    response = HttpResponse(receipt_xml, mimetype='text/xml', status=status_code)
+    response['Location'] = transfer_uuid
+    return response
+
+"""
+Example GET of service document:
+
+  curl -v http://127.0.0.1/api/v2/sword
+"""
 def service_document(request):
     service_document_xml = render_to_string('api/sword/service_document.xml')
-    return HttpResponse(service_document_xml)
+    response = HttpResponse(service_document_xml)
+    response['Content-Type'] = 'application/atomserv+xml'
+    return response
 
 """
 Example GET of transfers list:
@@ -231,7 +245,9 @@ def transfer_collection(request):
             })
 
         collection_xml = render_to_string('api/sword/collection.xml', locals())
-        return HttpResponse(collection_xml)
+        response = HttpResponse(collection_xml)
+        response['Content-Type'] = 'application/atom+xml;type=feed'
+        return response
     elif request.method == 'POST':
         # is the transfer still in progress
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'true':
@@ -266,11 +282,7 @@ def transfer_collection(request):
                             thread = threading.Thread(target=_fetch_content, args=(transfer_uuid, mock_object_content_urls))
                             thread.start()
 
-                            # respond with SWORD 2.0 deposit receipt XML
-                            receipt_xml = render_to_string('api/sword/deposit_receipt.xml', {'transfer_uuid': transfer_uuid})
-                            response = HttpResponse(receipt_xml, mimetype='text/xml', status=201)
-                            response['Location'] = transfer_uuid
-                            return response # Created
+                            return _deposit_receipt_response(transfer_uuid, 201)
                         else:
                             error = {
                                 'summary': 'Could not create transfer: contact an administrator.',
@@ -278,8 +290,7 @@ def transfer_collection(request):
                         }
                     except etree.XMLSyntaxError:
                         bad_request = 'Error parsing XML.'
-                except Exception as e:
-                    return HttpResponse(str(e))
+                except:
                     bad_request = 'Error writing temp file.'
             else:
                 bad_request = 'A request body must be sent when creating a transfer.'
@@ -338,7 +349,7 @@ def transfer(request, uuid):
                         1
                         ) # TODO: replace hardcoded user ID
 
-                        return HttpResponse('Transfer finalized and approved.')
+                        return _deposit_receipt_response(uuid, 200)
                     else:
                         bad_request = 'This transfer contains no files.'
                 else:
