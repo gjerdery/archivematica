@@ -121,14 +121,13 @@ def _handle_upload_request(request, uuid, replace_file=False):
                 # if doing a file replace, the file being replaced must exist
                 if os.path.exists(file_path):
                     os.remove(file_path)
-                    bytes_written = _write_file_from_request_body(request, file_path)
+                    _write_file_from_request_body(request, file_path)
+                    return HttpResponse(status=204) # No content
                 else:
                     bad_request = 'File does not exist.'
             else:
-                bytes_written = _write_file_from_request_body(request, file_path)
-
-            # TODO: better response
-            return HttpResponse('Wrote ' + str(bytes_written))
+                _write_file_from_request_body(request, file_path)
+                return HttpResponse(status=201) # Created
         else:
             bad_request = 'No filename found in Content-disposition header.'
     else:
@@ -351,8 +350,8 @@ def transfer(request, uuid):
         else:
             bad_request = 'The In-Progress header must be set to false when starting transfer processing.'
     elif request.method == 'PUT':
-        # update transfer and return details
-        return HttpResponse('Transfer updated.')
+        # update transfer
+        return HttpResponse(status=204) # No content
     elif request.method == 'DELETE':
         # delete transfer files
         transfer_path = _transfer_storage_path(uuid)
@@ -361,7 +360,7 @@ def transfer(request, uuid):
         # delete entry in Transfers table (and task?)
         transfer = models.Transfer.objects.get(uuid=uuid)
         transfer.delete()
-        return HttpResponse('Transfer deleted.')
+        return HttpResponse(status=204) # No content
     else:
         error = {
             'summary': 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.',
@@ -421,7 +420,7 @@ def transfer_files(request, uuid):
             file_path = os.path.join(transfer_path, filename) 
             if os.path.exists(file_path):
                 os.remove(file_path)
-                return HttpResponse('Deleted.')
+                return HttpResponse(status=204) # No content
             else:
                 error = {
                     'summary': 'The transfer path does not exist.',
