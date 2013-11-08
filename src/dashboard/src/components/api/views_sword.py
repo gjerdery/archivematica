@@ -221,10 +221,11 @@ def transfer_collection(request):
             'url': reverse('components.api.views_sword.transfer_collection')
         }
 
-        items = []
+        entries = []
+
         for uuid in _transfer_list():
             transfer = models.Transfer.objects.get(uuid=uuid)
-            items.append({
+            entries.append({
                 'title': os.path.basename(transfer.currentlocation),
                 'url': reverse('components.api.views_sword.transfer', args=[uuid])
             })
