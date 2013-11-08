@@ -387,6 +387,11 @@ Example POST of file:
     --data-binary "@joke.jpg" \
     http://localhost/api/v2/transfer/sword/03ce11a5-32c1-445a-83ac-400008894f78/media
 
+Example DELETE of all files:
+
+  curl -v -XDELETE \
+      "http://localhost/api/v2/transfer/sword/03ce11a5-32c1-445a-83ac-400008894f78/media
+
 Example DELETE of file:
 
   curl -v -XDELETE \
@@ -396,6 +401,8 @@ Example DELETE of file:
 # TODO: better Content-Disposition header parsing
 # TODO: add authentication
 def transfer_files(request, uuid):
+    # TODO: add check if UUID is valid, 404 otherwise
+
     error = None
 
     if request.method == 'GET':
@@ -427,10 +434,24 @@ def transfer_files(request, uuid):
                     'status': 404
                 }
         else:
-            error = {
-                'summary': 'No filename specified.',
-                'status': 400
-            }
+            # TODO: check if transfer isn't being processed
+            # delete all files in transfer
+            transfer = models.Transfer.objects.get(uuid=uuid)
+
+            if transfer.magiclink == None:
+                for filename in os.listdir(transfer.currentlocation):
+                    filepath = os.path.join(transfer.currentlocation, filename)
+                    if os.path.isfile(filepath):
+                        os.remove(filepath)
+                    elif os.path.isdir(filepath):
+                        shutil.rmtree(filepath)
+
+                return HttpResponse(status=204) # No content
+            else:
+                error = {
+                    'summary': 'This transfer is already being processed by Archivematica.',
+                    'status': 400
+                }
     else:
         error = {
             'summary': 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.',
