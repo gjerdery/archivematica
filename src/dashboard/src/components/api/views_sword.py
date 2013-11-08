@@ -30,6 +30,7 @@ from django.http import HttpResponse
 from django.db import transaction
 from django.template.loader import render_to_string
 from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import render
 from main import models
 from components import helpers
 from components.api.views import approve_transfer_via_mcp
@@ -214,8 +215,16 @@ def transfer_collection(request):
     bad_request = None
 
     if request.method == 'GET':
-        # return list of transfers
-        return helpers.json_response(_transfer_list())
+        # return list of transfers as ATOM feed
+        transfers = []
+        for uuid in _transfer_list():
+            transfer = models.Transfer.objects.get(uuid=uuid)
+            transfers.append({
+                'uuid': uuid,
+                'name': os.path.basename(transfer.currentlocation)
+            })
+        collection_xml = render_to_string('api/collection.xml', locals())
+        return HttpResponse(collection_xml)
     elif request.method == 'POST':
         # is the transfer still in progress
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'true':

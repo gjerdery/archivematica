@@ -1,0 +1,14 @@
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>{% url 'components.api.views_sword.transfer_collection' %}</id>
+  <title type="text">Transfers</title>
+  <link href="{% url 'components.api.views_sword.transfer_collection' %}" rel="self">
+  </link>
+  {% for transfer in transfers %}
+  <entry>
+    <id>{% url 'components.api.views_sword.transfer' transfer.uuid %}</id>
+    <title type="text">{{ transfer.name }}</title>
+    <link href="{% url 'components.api.views_sword.transfer' transfer.uuid %}" rel="self">
+    </link>
+  </entry>
+  {% endfor %}
+</feed>
