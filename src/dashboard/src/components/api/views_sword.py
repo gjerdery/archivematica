@@ -88,7 +88,7 @@ def _sword_error_response(request, error_details):
     error_details['request'] = request
     error_details['update_time'] = datetime.datetime.now().__str__()
     error_details['user_agent'] = request.META['HTTP_USER_AGENT']
-    error_xml = render_to_string('api/sword_error.xml', error_details)
+    error_xml = render_to_string('api/sword/error.xml', error_details)
     return HttpResponse(error_xml, status=error_details['status'])
 
 def _write_file_from_request_body(request, file_path):
@@ -196,7 +196,7 @@ def _fetch_content(transfer_uuid, object_content_urls):
     shutil.rmtree(temp_dir)
 
 def service_document(request):
-    service_document_xml = render_to_string('api/service_document.xml')
+    service_document_xml = render_to_string('api/sword/service_document.xml')
     return HttpResponse(service_document_xml)
 
 """
@@ -223,7 +223,7 @@ def transfer_collection(request):
                 'uuid': uuid,
                 'name': os.path.basename(transfer.currentlocation)
             })
-        collection_xml = render_to_string('api/collection.xml', locals())
+        collection_xml = render_to_string('api/sword/collection.xml', locals())
         return HttpResponse(collection_xml)
     elif request.method == 'POST':
         # is the transfer still in progress
@@ -260,7 +260,7 @@ def transfer_collection(request):
                             thread.start()
 
                             # respond with SWORD 2.0 deposit receipt XML
-                            receipt_xml = render_to_string('api/transfer_finalized.xml', {'transfer_uuid': transfer_uuid})
+                            receipt_xml = render_to_string('api/sword/deposit_receipt.xml', {'transfer_uuid': transfer_uuid})
                             response = HttpResponse(receipt_xml, mimetype='text/xml', status=201)
                             response['Location'] = transfer_uuid
                             return response # Created
