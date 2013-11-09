@@ -122,11 +122,16 @@ def _handle_upload_request(request, uuid, replace_file=False):
                 if os.path.exists(file_path):
                     os.remove(file_path)
                     _write_file_from_request_body(request, file_path)
+                    # TODO: check MD5
+                    #if 'HTTP_CONTENT_MD5' in request.META:
+                    #    DO THE CHECK
+
                     return HttpResponse(status=204) # No content
                 else:
                     bad_request = 'File does not exist.'
             else:
                 _write_file_from_request_body(request, file_path)
+                # TODO: check MD5
                 return HttpResponse(status=201) # Created
         else:
             bad_request = 'No filename found in Content-disposition header.'
@@ -201,6 +206,15 @@ def _deposit_receipt_response(transfer_uuid, status_code):
     response = HttpResponse(receipt_xml, mimetype='text/xml', status=status_code)
     response['Location'] = transfer_uuid
     return response
+
+def _transfer_is_being_processed(transfer_uuid):
+    try:
+        transfer = models.Transfer.objects.get(uuid=transfer_uuid)
+        if transfer.magiclink != None:
+            return True
+        return False
+    except:
+        return False
 
 """
 Example GET of service document:
@@ -334,9 +348,11 @@ def transfer(request, uuid):
             # TODO: check that related task is complete before copying
             # ...task row must exist and task endtime must be equal to or greater than start time
             try:
-                transfer = models.Transfer.objects.get(uuid=uuid)
+                if _transfer_is_being_processed(uuid):
+                    bad_request = 'This transfer has already been started and approved.'
+                else:
+                    transfer = models.Transfer.objects.get(uuid=uuid)
 
-                if transfer.magiclink == None:
                     if len(os.listdir(transfer.currentlocation)) > 0:
                         helpers.copy_to_start_transfer(transfer.currentlocation, 'standard', {'uuid': uuid})
 
@@ -352,8 +368,7 @@ def transfer(request, uuid):
                         return _deposit_receipt_response(uuid, 200)
                     else:
                         bad_request = 'This transfer contains no files.'
-                else:
-                    bad_request = 'This transfer has already been started and approved.'
+
             except ObjectDoesNotExist:
                 error = {
                     'summary': 'This transfer could not be found.',
@@ -413,7 +428,11 @@ Example DELETE of file:
 # TODO: better Content-Disposition header parsing
 # TODO: add authentication
 def transfer_files(request, uuid):
-    # TODO: add check if UUID is valid, 404 otherwise
+    if _transfer_is_being_processed(uuid):
+        return _sword_error_response(request, {
+            'summary': 'This transfer is already being processed by Archivematica.',
+            'status': 400
+        })
 
     error = None
 
@@ -446,11 +465,15 @@ def transfer_files(request, uuid):
                     'status': 404
                 }
         else:
-            # TODO: check if transfer isn't being processed
             # delete all files in transfer
-            transfer = models.Transfer.objects.get(uuid=uuid)
+            if _transfer_is_being_processed(uuid):
+                error = {
+                    'summary': 'This transfer is already being processed by Archivematica.',
+                    'status': 400
+                }
+            else:
+                transfer = models.Transfer.objects.get(uuid=uuid)
 
-            if transfer.magiclink == None:
                 for filename in os.listdir(transfer.currentlocation):
                     filepath = os.path.join(transfer.currentlocation, filename)
                     if os.path.isfile(filepath):
@@ -459,11 +482,6 @@ def transfer_files(request, uuid):
                         shutil.rmtree(filepath)
 
                 return HttpResponse(status=204) # No content
-            else:
-                error = {
-                    'summary': 'This transfer is already being processed by Archivematica.',
-                    'status': 400
-                }
     else:
         error = {
             'summary': 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.',
