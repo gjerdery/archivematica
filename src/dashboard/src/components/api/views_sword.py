@@ -522,7 +522,9 @@ def transfer_state(request, uuid):
         state_term = task_state.lower()
         state_description = 'Deposit initiation: ' + task_state
 
-        return HttpResponse(render_to_string('api/sword/state.xml', locals()))
+        response = HttpResponse(render_to_string('api/sword/state.xml', locals()))
+        response['Content-Type'] = 'application/atom+xml;type=feed'
+        return response
     else:
         error = {
             'summary': 'This endpoint only responds to the GET HTTP method.',
