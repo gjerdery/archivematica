@@ -21,6 +21,7 @@ import os
 import gearman
 import json
 import shutil
+import subprocess
 import tempfile
 import threading
 import time
@@ -103,6 +104,30 @@ def _write_file_from_request_body(request, file_path):
     new_file.close()
     return bytes_written
 
+def _get_file_md5_checksum(filepath):
+    raw_result = subprocess.Popen(["md5sum", filepath],stdout=subprocess.PIPE).communicate()[0]
+    return raw_result[0:32]
+
+def _handle_upload_request_with_potential_md5_checksum(request, file_path, success_status_code):
+    temp_filepath = _write_request_body_to_temp_file(request)
+    if 'HTTP_CONTENT_MD5' in request.META:
+        md5sum = _get_file_md5_checksum(temp_filepath)
+        if request.META['HTTP_CONTENT_MD5'] != md5sum:
+            os.remove(temp_filepath)
+            bad_request = 'MD5 checksum of uploaded file (' + md5sum + ') does not match checksum provided in header (' + request.META['HTTP_CONTENT_MD5'] + ').'
+            return _sword_error_response(request, {
+                'summary': bad_request,
+                'status': 400
+            })
+        else:
+            shutil.copyfile(temp_filepath, file_path)
+            os.remove(temp_filepath)
+            return HttpResponse(status=success_status_code)
+    else:
+        shutil.copyfile(temp_filepath, file_path)
+        os.remove(temp_filepath)
+        return HttpResponse(status=success_status_code)
+
 def _handle_upload_request(request, uuid, replace_file=False):
     error = None
     bad_request = None
@@ -120,19 +145,23 @@ def _handle_upload_request(request, uuid, replace_file=False):
             if replace_file:
                 # if doing a file replace, the file being replaced must exist
                 if os.path.exists(file_path):
-                    os.remove(file_path)
-                    _write_file_from_request_body(request, file_path)
-                    # TODO: check MD5
-                    #if 'HTTP_CONTENT_MD5' in request.META:
-                    #    DO THE CHECK
-
-                    return HttpResponse(status=204) # No content
+                    return _handle_upload_request_with_potential_md5_checksum(
+                        request,
+                        file_path,
+                        204
+                    )
                 else:
                     bad_request = 'File does not exist.'
             else:
-                _write_file_from_request_body(request, file_path)
-                # TODO: check MD5
-                return HttpResponse(status=201) # Created
+                # if adding a file, the file must not already exist
+                if os.path.exists(file_path):
+                    bad_request = 'File already exists.'
+                else:
+                    return _handle_upload_request_with_potential_md5_checksum(
+                        request,
+                        file_path,
+                        201
+                    )
         else:
             bad_request = 'No filename found in Content-disposition header.'
     else:
@@ -146,6 +175,11 @@ def _handle_upload_request(request, uuid, replace_file=False):
 
     if error != None:
         return _sword_error_response(request, error)
+
+def _write_request_body_to_temp_file(request):
+    filehandle, temp_filepath = tempfile.mkstemp()
+    _write_file_from_request_body(request, temp_filepath)
+    return temp_filepath
 
 @transaction.commit_manually
 def _flush_transaction():
@@ -268,9 +302,7 @@ def transfer_collection(request):
             # process creation request, if criteria met
             if request.body != '':
                 try:
-                    # write request body to temp file
-                    filehandle, temp_filepath = tempfile.mkstemp()
-                    _write_file_from_request_body(request, temp_filepath)
+                    temp_filepath = _write_request_body_to_temp_file(request)
 
                     # parse XML
                     try:
